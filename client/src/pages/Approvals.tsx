@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ApprovalItem } from "@/components/ApprovalItem";
+import { ApprovalDetailsDialog } from "@/components/ApprovalDetailsDialog";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import {
@@ -16,7 +17,18 @@ const mockApprovals = [
     id: "req-001",
     cardholderName: "Michael Chen",
     purpose: "Marketing Conference Travel & Expenses",
+    cardType: "one-time" as const,
+    transactionCount: "unlimited" as const,
     spendLimit: "$3,000",
+    currency: "USD",
+    validUntil: "2024-06-30",
+    allowedMerchants: ["Delta Airlines", "United Airlines", "Hilton Hotels", "Marriott Hotels"],
+    allowedMccCodes: ["4511", "7011"],
+    allowedCountries: ["US", "CA"],
+    channelRestriction: "both",
+    glAccountTemplate: "6100",
+    departmentTemplate: "marketing",
+    costCenterTemplate: "CC-001",
     requestedBy: "Sarah Johnson",
     requestDate: "Mar 10, 2024",
     approvalLevel: 1,
@@ -27,7 +39,19 @@ const mockApprovals = [
     id: "req-002",
     cardholderName: "Emily Rodriguez",
     purpose: "AWS Cloud Infrastructure - Q1 2024",
+    cardType: "recurring" as const,
+    renewalFrequency: "month" as const,
     spendLimit: "$5,500",
+    currency: "USD",
+    validFrom: "2024-03-01",
+    validUntil: "2024-12-31",
+    allowedMerchants: ["Amazon Web Services (AWS)"],
+    allowedMccCodes: ["7372"],
+    allowedCountries: ["US"],
+    channelRestriction: "online",
+    glAccountTemplate: "6200",
+    departmentTemplate: "engineering",
+    costCenterTemplate: "CC-002",
     requestedBy: "David Park",
     requestDate: "Mar 11, 2024",
     approvalLevel: 2,
@@ -38,7 +62,18 @@ const mockApprovals = [
     id: "req-003",
     cardholderName: "Alex Thompson",
     purpose: "Office Supplies & Equipment",
+    cardType: "one-time" as const,
+    transactionCount: "1" as const,
     spendLimit: "$1,200",
+    currency: "USD",
+    validUntil: "2024-04-15",
+    allowedMerchants: ["Office Depot", "Staples"],
+    allowedMccCodes: ["5943"],
+    allowedCountries: ["US"],
+    channelRestriction: "both",
+    glAccountTemplate: "5000",
+    departmentTemplate: "operations",
+    costCenterTemplate: "CC-003",
     requestedBy: "Lisa Chen",
     requestDate: "Mar 12, 2024",
     approvalLevel: 1,
@@ -48,7 +83,19 @@ const mockApprovals = [
     id: "req-004",
     cardholderName: "Jordan Lee",
     purpose: "Client Entertainment Budget",
+    cardType: "recurring" as const,
+    renewalFrequency: "quarter" as const,
     spendLimit: "$2,000",
+    currency: "USD",
+    validFrom: "2024-03-01",
+    validUntil: "2024-06-30",
+    allowedMerchants: [],
+    allowedMccCodes: ["5812", "5814"],
+    allowedCountries: ["US"],
+    channelRestriction: "both",
+    glAccountTemplate: "7000",
+    departmentTemplate: "sales",
+    costCenterTemplate: "CC-001",
     requestedBy: "Mark Wilson",
     requestDate: "Mar 13, 2024",
     approvalLevel: 1,
@@ -59,6 +106,7 @@ const mockApprovals = [
 export default function Approvals() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedRequest, setSelectedRequest] = useState<typeof mockApprovals[0] | null>(null);
 
   const filteredApprovals = mockApprovals.filter((approval) => {
     const matchesSearch =
@@ -110,10 +158,18 @@ export default function Approvals() {
             {...approval}
             onApprove={() => console.log(`Approve request: ${approval.id}`)}
             onReject={() => console.log(`Reject request: ${approval.id}`)}
-            onViewDetails={() => console.log(`View details: ${approval.id}`)}
+            onViewDetails={() => setSelectedRequest(approval)}
           />
         ))}
       </div>
+
+      {selectedRequest && (
+        <ApprovalDetailsDialog
+          open={!!selectedRequest}
+          onOpenChange={(open) => !open && setSelectedRequest(null)}
+          request={selectedRequest}
+        />
+      )}
 
       {filteredApprovals.length === 0 && (
         <div className="text-center py-12">
