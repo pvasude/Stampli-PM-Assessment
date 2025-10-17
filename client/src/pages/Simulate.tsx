@@ -16,7 +16,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { CreditCard, FileText, Zap } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 type Card = {
   id: string;
@@ -40,17 +39,11 @@ export default function Simulate() {
   const [selectedCard, setSelectedCard] = useState("");
   const [merchantName, setMerchantName] = useState("");
   const [transactionAmount, setTransactionAmount] = useState("");
-  const [transactionStatus, setTransactionStatus] = useState<"success" | "declined">("success");
-  const [declineReason, setDeclineReason] = useState("");
 
   // Invoice simulation state
-  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [vendorName, setVendorName] = useState("");
   const [invoiceAmount, setInvoiceAmount] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [paymentTerms, setPaymentTerms] = useState("Net 30");
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "ach" | "check">("card");
-  const [paymentCardId, setPaymentCardId] = useState("");
 
   // Simulate transaction mutation
   const simulateTransactionMutation = useMutation({
@@ -68,8 +61,6 @@ export default function Simulate() {
       // Reset form
       setMerchantName("");
       setTransactionAmount("");
-      setTransactionStatus("success");
-      setDeclineReason("");
     },
     onError: (error: Error) => {
       toast({
@@ -91,15 +82,13 @@ export default function Simulate() {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/cards'] });
       toast({
-        title: "Invoice simulated",
-        description: "Invoice has been created and marked as paid",
+        title: "Invoice created",
+        description: "Invoice has been created in the system",
       });
       // Reset form
-      setInvoiceNumber("");
       setVendorName("");
       setInvoiceAmount("");
       setDueDate("");
-      setPaymentCardId("");
     },
     onError: (error: Error) => {
       toast({
@@ -119,31 +108,16 @@ export default function Simulate() {
       });
       return;
     }
-
-    if (transactionStatus === "declined" && !declineReason) {
-      toast({
-        title: "Missing decline reason",
-        description: "Please provide a reason for the declined transaction",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const selectedCardData = activeCards.find(c => c.id === selectedCard);
     
     simulateTransactionMutation.mutate({
       cardId: selectedCard,
-      cardholder: selectedCardData?.cardholderName,
-      merchantName,
+      merchant: merchantName,
       amount: parseFloat(transactionAmount),
-      status: transactionStatus,
-      declineReason: transactionStatus === "declined" ? declineReason : null,
-      transactionDate: new Date().toISOString(),
     });
   };
 
   const handleSimulateInvoice = () => {
-    if (!invoiceNumber || !vendorName || !invoiceAmount || !dueDate) {
+    if (!vendorName || !invoiceAmount || !dueDate) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
@@ -152,23 +126,10 @@ export default function Simulate() {
       return;
     }
 
-    if (paymentMethod === "card" && !paymentCardId) {
-      toast({
-        title: "Missing card",
-        description: "Please select a card for payment",
-        variant: "destructive",
-      });
-      return;
-    }
-
     simulateInvoiceMutation.mutate({
-      invoiceNumber,
       vendorName,
       amount: parseFloat(invoiceAmount),
       dueDate,
-      paymentTerms,
-      paymentMethod,
-      cardId: paymentMethod === "card" ? paymentCardId : null,
     });
   };
 
@@ -249,38 +210,6 @@ export default function Simulate() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Transaction Status *</Label>
-                <RadioGroup value={transactionStatus} onValueChange={(value: any) => setTransactionStatus(value)}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="success" id="success" data-testid="radio-success" />
-                    <Label htmlFor="success" className="font-normal">Successful</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="declined" id="declined" data-testid="radio-declined" />
-                    <Label htmlFor="declined" className="font-normal">Declined</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {transactionStatus === "declined" && (
-                <div className="space-y-2">
-                  <Label htmlFor="decline-reason">Decline Reason *</Label>
-                  <Select value={declineReason} onValueChange={setDeclineReason}>
-                    <SelectTrigger id="decline-reason" data-testid="select-decline-reason">
-                      <SelectValue placeholder="Select decline reason" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="insufficient_funds">Insufficient Funds</SelectItem>
-                      <SelectItem value="card_limit_exceeded">Card Limit Exceeded</SelectItem>
-                      <SelectItem value="merchant_blocked">Merchant Blocked</SelectItem>
-                      <SelectItem value="expired_card">Card Expired</SelectItem>
-                      <SelectItem value="fraud_prevention">Fraud Prevention</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
               <Button
                 onClick={handleSimulateTransaction}
                 disabled={simulateTransactionMutation.isPending}
@@ -296,34 +225,21 @@ export default function Simulate() {
         <TabsContent value="invoices" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Simulate Invoice & Payment</CardTitle>
+              <CardTitle>Simulate Invoice</CardTitle>
               <CardDescription>
-                Create a test invoice and mark it as paid. It will appear in transactions and update the dashboard
+                Create a test invoice that will appear in the invoices page
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="invoice-number">Invoice Number *</Label>
-                  <Input
-                    id="invoice-number"
-                    value={invoiceNumber}
-                    onChange={(e) => setInvoiceNumber(e.target.value)}
-                    placeholder="INV-2024-999"
-                    data-testid="input-invoice-number"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="vendor">Vendor Name *</Label>
-                  <Input
-                    id="vendor"
-                    value={vendorName}
-                    onChange={(e) => setVendorName(e.target.value)}
-                    placeholder="Acme Corp"
-                    data-testid="input-vendor-name"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="vendor">Vendor Name *</Label>
+                <Input
+                  id="vendor"
+                  value={vendorName}
+                  onChange={(e) => setVendorName(e.target.value)}
+                  placeholder="Acme Corp"
+                  data-testid="input-vendor-name"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -352,68 +268,13 @@ export default function Simulate() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="payment-terms">Payment Terms</Label>
-                <Select value={paymentTerms} onValueChange={setPaymentTerms}>
-                  <SelectTrigger id="payment-terms" data-testid="select-payment-terms">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Due on Receipt">Due on Receipt</SelectItem>
-                    <SelectItem value="Net 30">Net 30</SelectItem>
-                    <SelectItem value="Net 60">Net 60</SelectItem>
-                    <SelectItem value="Net 90">Net 90</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Payment Method *</Label>
-                <RadioGroup value={paymentMethod} onValueChange={(value: any) => setPaymentMethod(value)}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="card" id="payment-card" data-testid="radio-payment-card" />
-                    <Label htmlFor="payment-card" className="font-normal">Card</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="ach" id="payment-ach" data-testid="radio-payment-ach" />
-                    <Label htmlFor="payment-ach" className="font-normal">ACH</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="check" id="payment-check" data-testid="radio-payment-check" />
-                    <Label htmlFor="payment-check" className="font-normal">Check</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {paymentMethod === "card" && (
-                <div className="space-y-2">
-                  <Label htmlFor="payment-card-select">Select Card for Payment *</Label>
-                  <Select value={paymentCardId} onValueChange={setPaymentCardId}>
-                    <SelectTrigger id="payment-card-select" data-testid="select-payment-card">
-                      <SelectValue placeholder="Select a card" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeCards.length === 0 ? (
-                        <SelectItem value="none" disabled>No active cards available</SelectItem>
-                      ) : (
-                        activeCards.map(card => (
-                          <SelectItem key={card.id} value={card.id}>
-                            {card.cardholderName} {card.last4 ? `(****${card.last4})` : ''}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
               <Button
                 onClick={handleSimulateInvoice}
                 disabled={simulateInvoiceMutation.isPending}
                 className="w-full"
                 data-testid="button-simulate-invoice"
               >
-                {simulateInvoiceMutation.isPending ? "Creating..." : "Simulate Invoice & Payment"}
+                {simulateInvoiceMutation.isPending ? "Creating..." : "Create Invoice"}
               </Button>
             </CardContent>
           </Card>

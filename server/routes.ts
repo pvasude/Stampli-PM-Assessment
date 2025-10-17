@@ -264,6 +264,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Simulation routes
+  app.post("/api/simulate/transaction", async (req, res) => {
+    try {
+      const { cardId, amount, merchant } = req.body;
+      
+      // Get the card to validate and get cardholder info
+      const card = await storage.getCard(cardId);
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+
+      // Create transaction with realistic data
+      const transaction = await storage.createTransaction({
+        cardId,
+        cardholderName: card.cardholderName,
+        amount: amount.toString(),
+        date: new Date().toISOString().split('T')[0],
+        merchant: merchant || `Test Merchant ${Math.floor(Math.random() * 1000)}`,
+        glAccount: card.glAccountTemplate || "6000",
+        costCenter: card.costCenterTemplate || "CC-100",
+        reconciliationStatus: "Pending Coding"
+      });
+
+      // Update card spend
+      const newSpend = parseFloat(card.currentSpend) + parseFloat(amount);
+      await storage.updateCard(cardId, {
+        currentSpend: newSpend.toString()
+      });
+
+      res.json(transaction);
+    } catch (error) {
+      console.error("Simulate transaction error:", error);
+      res.status(500).json({ error: "Failed to create transaction" });
+    }
+  });
+
+  app.post("/api/simulate/invoice", async (req, res) => {
+    try {
+      const { vendorName, amount, dueDate } = req.body;
+      
+      const invoice = await storage.createInvoice({
+        invoiceNumber: `INV-${Math.floor(Math.random() * 100000)}`,
+        vendorName,
+        amount: amount.toString(),
+        dueDate,
+        status: "Pending",
+        description: `Simulated invoice for ${vendorName}`
+      });
+
+      res.json(invoice);
+    } catch (error) {
+      console.error("Simulate invoice error:", error);
+      res.status(500).json({ error: "Failed to create invoice" });
+    }
+  });
+
+  app.post("/api/simulate/pay-invoice", async (req, res) => {
+    try {
+      const { invoiceId, cardholderName, spendLimit } = req.body;
+      
+      // Get the invoice
+      const invoice = await storage.getInvoice(invoiceId);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      // Create a card for this invoice
+      const cardNumber = `4571${Math.floor(Math.random() * 1000000000000).toString().padStart(12, '0')}`;
+      const last4 = cardNumber.slice(-4);
+      const expiryDate = new Date();
+      expiryDate.setFullYear(expiryDate.getFullYear() + 2);
+      const expiryMonth = String(expiryDate.getMonth() + 1).padStart(2, '0');
+      const expiryYear = String(expiryDate.getFullYear()).slice(-2);
+      const cvv = Math.floor(Math.random() * 900 + 100).toString();
+
+      const card = await storage.createCard({
+        cardType: "Invoice Payment",
+        cardholderName,
+        spendLimit: spendLimit.toString(),
+        status: "Active",
+        purpose: `Payment for ${invoice.invoiceNumber}`,
+        invoiceId,
+        requestedBy: cardholderName,
+        approvedBy: "Auto-Approved",
+        isOneTimeUse: true,
+        currency: "USD",
+        cardNumber,
+        last4,
+        expiryDate: `${expiryMonth}/${expiryYear}`,
+        cvv
+      });
+
+      // Update invoice to Paid
+      await storage.updateInvoice(invoiceId, {
+        status: "Paid",
+        paymentMethod: `Virtual Card - ${last4}`
+      });
+
+      res.json({ card, invoice });
+    } catch (error) {
+      console.error("Pay invoice error:", error);
+      res.status(500).json({ error: "Failed to pay invoice" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
