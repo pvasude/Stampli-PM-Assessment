@@ -101,6 +101,7 @@ export const cardApprovals = pgTable("card_approvals", {
   comments: text("comments"),
   approvalLevel: integer("approval_level").notNull(),
   approvedAt: timestamp("approved_at"),
+  proposedChanges: text("proposed_changes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
