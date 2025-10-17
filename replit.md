@@ -4,6 +4,27 @@
 
 Stampli AP + Cards is an invoice-centric Accounts Payable and Virtual Card Management platform. It enables users to manage virtual cards, approve requests, track invoices, process payments, and reconcile transactions within a unified workflow. The platform emphasizes real-time collaboration, AI assistance, and single-screen efficiency, drawing design inspiration from modern finance applications like Stripe, Linear, Notion, and Intercom. Its core purpose is to streamline financial operations for businesses.
 
+## Recent Changes
+
+**October 17, 2025 - Card Modification Approval Workflow (Bug Fix):**
+- **Issue:** When users edited card limits and submitted for approval, nothing appeared on the Approvals page
+- **Root Causes:**
+  1. handleSubmitChanges only displayed toast message, didn't create approval request in database
+  2. Edited values persisted across card switches (stale state bug)
+  3. Approvals page displayed current card values instead of proposed changes
+- **Implementation:**
+  - Added `proposedChanges` text field to card_approvals schema to store JSON of modifications
+  - Created createApprovalMutation in CardDetailSheet to POST approval with serialized changes
+  - Added useEffect to reset edited values when card.id changes (prevents stale state)
+  - Modified Approvals page to parse proposedChanges JSON and display proposed values
+- **Complete Workflow:**
+  1. User opens card detail sheet and clicks "Manage Card Limit"
+  2. Edit spend limit (or other fields) → state updates correctly
+  3. Click "Submit for Approval" → approval created with proposedChanges JSON
+  4. Approvals page parses proposedChanges and displays proposed values (not current card values)
+  5. Approver sees what changes are being requested before approving
+- **Testing:** E2E test validated full workflow from edit to approval display
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
