@@ -101,6 +101,10 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
     if (!validUntil.trim()) {
       return false;
     }
+    // Coding template is mandatory
+    if (!glAccount || !department || !costCenter) {
+      return false;
+    }
     return true;
   };
 
@@ -454,12 +458,12 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
           <TabsContent value="coding" className="space-y-4 mt-4">
             <div className="bg-muted/50 p-3 rounded-lg mb-4">
               <p className="text-sm text-muted-foreground">
-                Pre-define accounting codes for automatic transaction coding
+                <span className="font-semibold">All fields required.</span> Accounting codes will be automatically applied to transactions on this card.
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="gl-account">GL Account Template</Label>
+              <Label htmlFor="gl-account">GL Account Template *</Label>
               <Select value={glAccount} onValueChange={setGlAccount}>
                 <SelectTrigger id="gl-account" data-testid="select-gl-template">
                   <SelectValue placeholder="Select GL account" />
@@ -474,7 +478,7 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="department">Department Template</Label>
+              <Label htmlFor="department">Department Template *</Label>
               <Select value={department} onValueChange={setDepartment}>
                 <SelectTrigger id="department" data-testid="select-department-template">
                   <SelectValue placeholder="Select department" />
@@ -489,7 +493,7 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cost-center">Cost Center Template</Label>
+              <Label htmlFor="cost-center">Cost Center Template *</Label>
               <Select value={costCenter} onValueChange={setCostCenter}>
                 <SelectTrigger id="cost-center" data-testid="select-cost-center-template">
                   <SelectValue placeholder="Select cost center" />
