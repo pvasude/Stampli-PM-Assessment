@@ -356,7 +356,14 @@ export class DatabaseStorage implements IStorage {
       .filter(p => p.status === "Paid")
       .reduce((sum, p) => sum + parseFloat(p.amount), 0);
     
-    // Check for overdue payments (PRIORITY: overdue trumps all other statuses)
+    const invoiceAmount = parseFloat(invoice.amount);
+    
+    // PRIORITY 1: If fully paid, invoice is "Paid" (trumps overdue status)
+    if (totalPaid >= invoiceAmount) {
+      return "Paid";
+    }
+    
+    // PRIORITY 2: Check for overdue payments (only if not fully paid)
     const now = new Date();
     const hasOverduePayments = invoicePayments.some(p => 
       p.status !== "Paid" && new Date(p.dueDate) < now
@@ -365,8 +372,6 @@ export class DatabaseStorage implements IStorage {
     if (hasOverduePayments) {
       return "Overdue";
     }
-    
-    const invoiceAmount = parseFloat(invoice.amount);
     
     // If no payments made yet and status is "Card Shared", keep that status
     if (totalPaid === 0 && invoice.status === "Card Shared - Awaiting Payment") {

@@ -157,7 +157,12 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   
   // Card generation fields - pre-populated from invoice
   const [cardholderName, setCardholderName] = useState("");
-  const [validUntil, setValidUntil] = useState("");
+  // Default to 30 days from now in yyyy-MM-dd format
+  const [validUntil, setValidUntil] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 30);
+    return date.toISOString().split('T')[0];
+  });
   const [channelRestriction, setChannelRestriction] = useState("both");
   const [allowedMerchants, setAllowedMerchants] = useState<string[]>([invoice.vendorName]);
   const [allowedCountries, setAllowedCountries] = useState<string[]>(["US"]);
@@ -193,7 +198,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
         spendLimit: limitAmount.toFixed(2),
         currentSpend: 0,
         validFrom: new Date().toISOString(),
-        validUntil,
+        validUntil: new Date(validUntil + 'T23:59:59').toISOString(), // Convert yyyy-MM-dd to ISO timestamp
         status: "Active",
         requestedBy: cardholderName,
         approvedBy: "Auto-Approved",
@@ -273,7 +278,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
         spendLimit: limitAmount.toFixed(2),
         currentSpend: 0,
         validFrom: new Date().toISOString(),
-        validUntil,
+        validUntil: new Date(validUntil + 'T23:59:59').toISOString(), // Convert yyyy-MM-dd to ISO timestamp
         status: "Active",
         requestedBy: cardholderName,
         approvedBy: "Auto-Approved",
