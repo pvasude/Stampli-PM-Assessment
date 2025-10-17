@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, Check, AlertCircle } from "lucide-react";
+import { Upload, Check, AlertCircle, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
 interface TransactionRowProps {
@@ -15,14 +15,18 @@ interface TransactionRowProps {
   date: string;
   vendor: string;
   amount: string;
+  cashback?: string;
   cardholder: string;
   status: "Coded" | "Pending Receipt" | "Ready to Sync" | "Synced";
   glAccount?: string;
+  department?: string;
   costCenter?: string;
   hasReceipt?: boolean;
   onUploadReceipt?: () => void;
   onUpdateGL?: (value: string) => void;
+  onUpdateDepartment?: (value: string) => void;
   onUpdateCostCenter?: (value: string) => void;
+  onSyncToERP?: () => void;
 }
 
 export function TransactionRow({
@@ -30,16 +34,21 @@ export function TransactionRow({
   date,
   vendor,
   amount,
+  cashback,
   cardholder,
   status,
   glAccount,
+  department,
   costCenter,
   hasReceipt,
   onUploadReceipt,
   onUpdateGL,
+  onUpdateDepartment,
   onUpdateCostCenter,
+  onSyncToERP,
 }: TransactionRowProps) {
   const [localGL, setLocalGL] = useState(glAccount);
+  const [localDepartment, setLocalDepartment] = useState(department);
   const [localCostCenter, setLocalCostCenter] = useState(costCenter);
 
   const statusVariants = {
@@ -54,6 +63,7 @@ export function TransactionRow({
       <td className="p-3 text-sm" data-testid={`text-date-${id}`}>{date}</td>
       <td className="p-3 text-sm" data-testid={`text-vendor-${id}`}>{vendor}</td>
       <td className="p-3 text-sm font-mono font-medium" data-testid={`text-amount-${id}`}>{amount}</td>
+      <td className="p-3 text-sm font-mono text-muted-foreground" data-testid={`text-cashback-${id}`}>{cashback || "$0.00"}</td>
       <td className="p-3 text-sm text-muted-foreground">{cardholder}</td>
       <td className="p-3">
         <Badge variant={statusVariants[status]} data-testid={`badge-status-${id}`}>
@@ -73,6 +83,22 @@ export function TransactionRow({
             <SelectItem value="6100">6100 - Travel</SelectItem>
             <SelectItem value="6200">6200 - Software</SelectItem>
             <SelectItem value="7000">7000 - Marketing</SelectItem>
+          </SelectContent>
+        </Select>
+      </td>
+      <td className="p-3">
+        <Select value={localDepartment} onValueChange={(value) => {
+          setLocalDepartment(value);
+          onUpdateDepartment?.(value);
+        }}>
+          <SelectTrigger className="w-[140px] h-8" data-testid={`select-department-${id}`}>
+            <SelectValue placeholder="Select Dept" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Sales">Sales</SelectItem>
+            <SelectItem value="Engineering">Engineering</SelectItem>
+            <SelectItem value="Operations">Operations</SelectItem>
+            <SelectItem value="Marketing">Marketing</SelectItem>
           </SelectContent>
         </Select>
       </td>
@@ -107,6 +133,18 @@ export function TransactionRow({
         ) : (
           <AlertCircle className="h-4 w-4 text-muted-foreground" />
         )}
+      </td>
+      <td className="p-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onSyncToERP}
+          disabled={status === "Synced"}
+          data-testid={`button-sync-erp-${id}`}
+        >
+          <RefreshCw className="h-4 w-4 mr-1" />
+          Sync to ERP
+        </Button>
       </td>
     </tr>
   );

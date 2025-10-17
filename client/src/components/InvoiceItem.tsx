@@ -12,6 +12,7 @@ interface InvoiceItemProps {
   dueDate: string;
   status: "Pending" | "Paid" | "Overdue" | "Approved";
   description?: string;
+  paymentTerms?: "Net 30" | "Net 60" | "Net 90" | "Due on Receipt";
   onViewDetails?: () => void;
 }
 
@@ -23,6 +24,7 @@ export function InvoiceItem({
   dueDate,
   status,
   description,
+  paymentTerms,
   onViewDetails,
 }: InvoiceItemProps) {
   const statusVariants = {
@@ -68,9 +70,9 @@ export function InvoiceItem({
           >
             View Details
           </Button>
-          {status === "Approved" && (
+          {(status === "Approved" || status === "Overdue") && (
             <PayInvoiceDialog
-              invoice={{ id, invoiceNumber, vendorName, amount }}
+              invoice={{ id, invoiceNumber, vendorName, amount, paymentTerms }}
               trigger={
                 <Button 
                   size="sm" 

@@ -34,6 +34,7 @@ interface PayInvoiceDialogProps {
     totalAmount?: string;
     acceptsCards?: boolean;
     mcpAutomation?: "available" | "manual" | "unavailable";
+    paymentTerms?: "Net 30" | "Net 60" | "Net 90" | "Due on Receipt";
   };
   onPay?: (method: string, details: any) => void;
 }
@@ -43,12 +44,30 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   const [paymentMethod, setPaymentMethod] = useState("card");
   const { toast } = useToast();
   
+  // Determine card type and frequency based on payment terms
+  const getCardDefaults = () => {
+    const terms = invoice.paymentTerms || "Due on Receipt";
+    if (terms === "Due on Receipt") {
+      return { cardType: "one-time" as const, transactionCount: "1" as const, renewalFrequency: "month" as const };
+    } else if (terms === "Net 30") {
+      return { cardType: "recurring" as const, transactionCount: "1" as const, renewalFrequency: "month" as const };
+    } else if (terms === "Net 60" || terms === "Net 90") {
+      return { cardType: "recurring" as const, transactionCount: "1" as const, renewalFrequency: "quarter" as const };
+    }
+    return { cardType: "one-time" as const, transactionCount: "1" as const, renewalFrequency: "month" as const };
+  };
+  
+  const defaults = getCardDefaults();
+  
   // Card generation fields - pre-populated from invoice
   const [cardholderName, setCardholderName] = useState("");
   const [validUntil, setValidUntil] = useState("");
   const [channelRestriction, setChannelRestriction] = useState("both");
   const [allowedMerchants, setAllowedMerchants] = useState(invoice.vendorName);
   const [currency, setCurrency] = useState("USD");
+  const [cardType, setCardType] = useState<"one-time" | "recurring">(defaults.cardType);
+  const [transactionCount, setTransactionCount] = useState<"1" | "unlimited">(defaults.transactionCount);
+  const [renewalFrequency, setRenewalFrequency] = useState<"month" | "quarter" | "year">(defaults.renewalFrequency);
   
   // Calculate values
   const cardLimit = invoice.totalAmount || invoice.amount;
@@ -66,6 +85,9 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       allowedMerchants: [allowedMerchants],
       currency,
       cardType: "Invoice Card",
+      limitType: cardType,
+      transactionCount: cardType === "one-time" ? transactionCount : null,
+      renewalFrequency: cardType === "recurring" ? renewalFrequency : null,
       purpose: `Payment for ${invoice.invoiceNumber}`,
     };
     

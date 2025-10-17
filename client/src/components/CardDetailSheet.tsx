@@ -65,8 +65,12 @@ interface CardDetailSheetProps {
     allowedMccCodes?: string[];
     allowedCountries?: string[];
     channelRestriction?: string;
-    dailyLimit?: string;
-    monthlyLimit?: string;
+    limitType?: "one-time" | "recurring";
+    transactionCount?: "1" | "unlimited";
+    renewalFrequency?: "month" | "quarter" | "year";
+    glAccountTemplate?: string;
+    departmentTemplate?: string;
+    costCenterTemplate?: string;
   };
 }
 
@@ -285,33 +289,44 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                         <p className="text-sm text-muted-foreground">{card.currency || "USD"}</p>
                       </div>
                     </div>
-                    {card.dailyLimit && (
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Limit Type</p>
+                        <p className="text-sm text-muted-foreground capitalize">
+                          {card.limitType || "-"}
+                        </p>
+                      </div>
+                    </div>
+                    {card.limitType === "one-time" && (
                       <div className="flex items-center gap-3">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium">Daily Limit</p>
-                          <p className="text-sm text-muted-foreground">{card.dailyLimit}</p>
+                          <p className="text-sm font-medium">Transaction Count</p>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {card.transactionCount || "-"}
+                          </p>
                         </div>
                       </div>
                     )}
-                    {card.monthlyLimit && (
+                    {card.limitType === "recurring" && (
                       <div className="flex items-center gap-3">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium">Monthly Limit</p>
-                          <p className="text-sm text-muted-foreground">{card.monthlyLimit}</p>
+                          <p className="text-sm font-medium">Renewal Frequency</p>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {card.renewalFrequency || "-"}
+                          </p>
                         </div>
                       </div>
                     )}
-                    {card.validUntil && (
-                      <div className="flex items-center gap-3">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Valid Until</p>
-                          <p className="text-sm text-muted-foreground">{card.validUntil}</p>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Valid Until</p>
+                        <p className="text-sm text-muted-foreground">{card.validUntil || "-"}</p>
                       </div>
-                    )}
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -320,33 +335,75 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                     <CardTitle className="text-base">Restrictions</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {card.allowedCountries && card.allowedCountries.length > 0 && (
-                      <div className="flex items-start gap-3">
-                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Allowed Countries</p>
-                          <p className="text-sm text-muted-foreground">{card.allowedCountries.join(", ")}</p>
-                        </div>
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Allowed Countries</p>
+                        <p className="text-sm text-muted-foreground">
+                          {card.allowedCountries && card.allowedCountries.length > 0 
+                            ? card.allowedCountries.join(", ") 
+                            : "-"}
+                        </p>
                       </div>
-                    )}
-                    {card.channelRestriction && (
-                      <div className="flex items-center gap-3">
-                        <CreditCard className="h-4 w-4 text-muted-foreground" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Channel</p>
-                          <p className="text-sm text-muted-foreground capitalize">{card.channelRestriction}</p>
-                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Channel</p>
+                        <p className="text-sm text-muted-foreground capitalize">{card.channelRestriction || "-"}</p>
                       </div>
-                    )}
-                    {card.allowedMerchants && card.allowedMerchants.length > 0 && (
-                      <div className="flex items-start gap-3">
-                        <CheckCircle2 className="h-4 w-4 text-muted-foreground mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Allowed Merchants</p>
-                          <p className="text-sm text-muted-foreground">{card.allowedMerchants.join(", ")}</p>
-                        </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Allowed Merchants</p>
+                        <p className="text-sm text-muted-foreground">
+                          {card.allowedMerchants && card.allowedMerchants.length > 0 
+                            ? card.allowedMerchants.join(", ") 
+                            : "-"}
+                        </p>
                       </div>
-                    )}
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Allowed MCC Codes</p>
+                        <p className="text-sm text-muted-foreground">
+                          {card.allowedMccCodes && card.allowedMccCodes.length > 0 
+                            ? card.allowedMccCodes.join(", ") 
+                            : "-"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Coding Template</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">GL Account</p>
+                        <p className="text-sm text-muted-foreground">{card.glAccountTemplate || "-"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Department</p>
+                        <p className="text-sm text-muted-foreground">{card.departmentTemplate || "-"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Cost Center</p>
+                        <p className="text-sm text-muted-foreground">{card.costCenterTemplate || "-"}</p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>

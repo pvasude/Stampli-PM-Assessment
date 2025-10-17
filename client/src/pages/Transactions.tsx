@@ -18,9 +18,11 @@ const mockTransactions = [
     date: "Mar 10, 2024",
     vendor: "Amazon Web Services",
     amount: "$850.00",
+    cashback: "$8.50",
     cardholder: "Sarah Johnson",
     status: "Pending Receipt" as const,
     glAccount: "6200",
+    department: "Engineering",
     costCenter: "CC-002",
     hasReceipt: false,
   },
@@ -29,9 +31,11 @@ const mockTransactions = [
     date: "Mar 11, 2024",
     vendor: "Acme Office Supplies",
     amount: "$1,245.50",
+    cashback: "$12.46",
     cardholder: "Michael Chen",
     status: "Coded" as const,
     glAccount: "5000",
+    department: "Sales",
     costCenter: "CC-001",
     hasReceipt: true,
   },
@@ -40,9 +44,11 @@ const mockTransactions = [
     date: "Mar 12, 2024",
     vendor: "LinkedIn Ads",
     amount: "$2,500.00",
+    cashback: "$25.00",
     cardholder: "Emily Rodriguez",
     status: "Ready to Sync" as const,
     glAccount: "7000",
+    department: "Sales",
     costCenter: "CC-001",
     hasReceipt: true,
   },
@@ -51,9 +57,11 @@ const mockTransactions = [
     date: "Mar 13, 2024",
     vendor: "Delta Airlines",
     amount: "$680.00",
+    cashback: "$6.80",
     cardholder: "David Park",
     status: "Pending Receipt" as const,
     glAccount: "6100",
+    department: "Operations",
     costCenter: "CC-003",
     hasReceipt: false,
   },
@@ -62,9 +70,11 @@ const mockTransactions = [
     date: "Mar 14, 2024",
     vendor: "Zoom Video",
     amount: "$199.00",
+    cashback: "$1.99",
     cardholder: "Sarah Johnson",
     status: "Synced" as const,
     glAccount: "6200",
+    department: "Engineering",
     costCenter: "CC-002",
     hasReceipt: true,
   },
@@ -126,11 +136,14 @@ export default function Transactions() {
                 <th className="p-3 text-left text-sm font-medium">Date</th>
                 <th className="p-3 text-left text-sm font-medium">Vendor</th>
                 <th className="p-3 text-left text-sm font-medium">Amount</th>
+                <th className="p-3 text-left text-sm font-medium">Cashback</th>
                 <th className="p-3 text-left text-sm font-medium">Cardholder</th>
                 <th className="p-3 text-left text-sm font-medium">Status</th>
                 <th className="p-3 text-left text-sm font-medium">GL Account</th>
+                <th className="p-3 text-left text-sm font-medium">Department</th>
                 <th className="p-3 text-left text-sm font-medium">Cost Center</th>
                 <th className="p-3 text-left text-sm font-medium">Receipt</th>
+                <th className="p-3 text-left text-sm font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -140,7 +153,9 @@ export default function Transactions() {
                   {...txn}
                   onUploadReceipt={() => setSelectedTransaction(txn.id)}
                   onUpdateGL={(value) => console.log(`GL updated for ${txn.id}:`, value)}
+                  onUpdateDepartment={(value) => console.log(`Department updated for ${txn.id}:`, value)}
                   onUpdateCostCenter={(value) => console.log(`Cost center updated for ${txn.id}:`, value)}
+                  onSyncToERP={() => console.log(`Syncing ${txn.id} to ERP`)}
                 />
               ))}
             </tbody>

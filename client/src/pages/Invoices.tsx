@@ -20,6 +20,7 @@ const mockInvoices = [
     dueDate: "Mar 15, 2024",
     status: "Pending" as const,
     description: "Office furniture and equipment for Q1",
+    paymentTerms: "Net 30" as const,
   },
   {
     id: "inv-002",
@@ -29,6 +30,7 @@ const mockInvoices = [
     dueDate: "Mar 20, 2024",
     status: "Approved" as const,
     description: "Annual software licenses renewal",
+    paymentTerms: "Net 60" as const,
   },
   {
     id: "inv-003",
@@ -38,6 +40,7 @@ const mockInvoices = [
     dueDate: "Mar 25, 2024",
     status: "Pending" as const,
     description: "Cloud infrastructure hosting - March",
+    paymentTerms: "Due on Receipt" as const,
   },
   {
     id: "inv-004",
@@ -47,6 +50,7 @@ const mockInvoices = [
     dueDate: "Mar 10, 2024",
     status: "Overdue" as const,
     description: "Brand refresh and website redesign",
+    paymentTerms: "Net 90" as const,
   },
   {
     id: "inv-005",
@@ -56,6 +60,7 @@ const mockInvoices = [
     dueDate: "Feb 28, 2024",
     status: "Paid" as const,
     description: "Q4 legal consultation services",
+    paymentTerms: "Net 30" as const,
   },
 ];
 
@@ -111,7 +116,6 @@ export default function Invoices() {
           <InvoiceItem
             key={invoice.id}
             {...invoice}
-            onPayWithCard={() => console.log(`Pay invoice: ${invoice.id}`)}
             onViewDetails={() => console.log(`View invoice: ${invoice.id}`)}
           />
         ))}

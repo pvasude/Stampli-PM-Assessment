@@ -30,8 +30,8 @@ interface CardRequestDialogProps {
 
 export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
   const [open, setOpen] = useState(false);
-  const [isOneTimeUse, setIsOneTimeUse] = useState(false);
-  const { toast } = useToast();
+  const [cardType, setCardType] = useState<"one-time" | "recurring">("one-time");
+  const { toast} = useToast();
   
   // Basic fields
   const [cardholderName, setCardholderName] = useState("");
@@ -40,17 +40,16 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
   
   // Limits
   const [spendLimit, setSpendLimit] = useState("");
-  const [transactionLimit, setTransactionLimit] = useState("");
-  const [dailyLimit, setDailyLimit] = useState("");
-  const [monthlyLimit, setMonthlyLimit] = useState("");
+  const [transactionCount, setTransactionCount] = useState<"1" | "unlimited">("1");
+  const [renewalFrequency, setRenewalFrequency] = useState<"month" | "quarter" | "year">("month");
   
   // Duration
   const [validFrom, setValidFrom] = useState("");
   const [validUntil, setValidUntil] = useState("");
   
   // Restrictions
-  const [allowedMerchants, setAllowedMerchants] = useState("");
-  const [allowedMccCodes, setAllowedMccCodes] = useState("");
+  const [allowedMerchants, setAllowedMerchants] = useState<string[]>([]);
+  const [allowedMccCodes, setAllowedMccCodes] = useState<string[]>([]);
   const [allowedCountries, setAllowedCountries] = useState("");
   const [channelRestriction, setChannelRestriction] = useState("both");
   
@@ -60,19 +59,12 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
   const [costCenter, setCostCenter] = useState("");
 
   const isFormValid = () => {
-    // Basic section - required fields
     if (!cardholderName.trim() || !purpose.trim() || !spendLimit.trim()) {
-      return false;
-    }
-    
-    // Limits section - required fields
-    if (isOneTimeUse && !transactionLimit.trim()) {
       return false;
     }
     if (!validUntil.trim()) {
       return false;
     }
-    
     return true;
   };
 
@@ -86,20 +78,18 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
       purpose,
       currency,
       spendLimit,
-      transactionLimit: isOneTimeUse ? transactionLimit : null,
-      dailyLimit: !isOneTimeUse ? dailyLimit : null,
-      monthlyLimit: !isOneTimeUse ? monthlyLimit : null,
+      cardType,
+      transactionCount: cardType === "one-time" ? transactionCount : null,
+      renewalFrequency: cardType === "recurring" ? renewalFrequency : null,
       validFrom,
       validUntil,
-      allowedMerchants: allowedMerchants.split(',').map(m => m.trim()).filter(Boolean),
-      allowedMccCodes: allowedMccCodes.split(',').map(m => m.trim()).filter(Boolean),
-      allowedCountries: allowedCountries.split(',').map(c => c.trim()).filter(Boolean),
+      allowedMerchants,
+      allowedMccCodes,
+      allowedCountries: allowedCountries.split(',').map((c: string) => c.trim()).filter(Boolean),
       channelRestriction,
       glAccountTemplate: glAccount,
       departmentTemplate: department,
       costCenterTemplate: costCenter,
-      isOneTimeUse,
-      cardType: "Expense Card",
       status: "Pending Approval",
     };
     
@@ -187,64 +177,61 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-3 border rounded-md">
-              <div className="space-y-0.5">
-                <Label htmlFor="one-time">One-Time Card</Label>
-                <p className="text-xs text-muted-foreground">
-                  Card deactivates after reaching transaction limit
-                </p>
-              </div>
-              <Switch
-                id="one-time"
-                checked={isOneTimeUse}
-                onCheckedChange={setIsOneTimeUse}
-                data-testid="switch-one-time"
-              />
+            <div className="space-y-2">
+              <Label htmlFor="card-type">Card Type *</Label>
+              <Select value={cardType} onValueChange={(value: "one-time" | "recurring") => setCardType(value)}>
+                <SelectTrigger id="card-type" data-testid="select-card-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="one-time">One-Time Card</SelectItem>
+                  <SelectItem value="recurring">Recurring Card</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {cardType === "one-time" 
+                  ? "Card for single-use or limited transactions" 
+                  : "Card with recurring spend limits"}
+              </p>
             </div>
           </TabsContent>
           
           <TabsContent value="limits" className="space-y-4 mt-4">
-            {isOneTimeUse ? (
+            {cardType === "one-time" ? (
               <div className="space-y-2">
-                <Label htmlFor="transaction-limit">Transaction Limit *</Label>
-                <Input
-                  id="transaction-limit"
-                  type="number"
-                  value={transactionLimit}
-                  onChange={(e) => setTransactionLimit(e.target.value)}
-                  placeholder="Maximum amount for single transaction"
-                  data-testid="input-transaction-limit"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Card will deactivate after this amount is reached
-                </p>
+                <Label htmlFor="transaction-count">Transaction Count *</Label>
+                <RadioGroup value={transactionCount} onValueChange={(value: "1" | "unlimited") => setTransactionCount(value)}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="1" id="one-transaction" data-testid="radio-one-transaction" />
+                    <Label htmlFor="one-transaction" className="font-normal">
+                      1 transaction (card deactivates after single use)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="unlimited" id="unlimited-transactions" data-testid="radio-unlimited-transactions" />
+                    <Label htmlFor="unlimited-transactions" className="font-normal">
+                      Unlimited transactions (until spend limit reached)
+                    </Label>
+                  </div>
+                </RadioGroup>
               </div>
             ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="daily-limit">Daily Limit</Label>
-                  <Input
-                    id="daily-limit"
-                    type="number"
-                    value={dailyLimit}
-                    onChange={(e) => setDailyLimit(e.target.value)}
-                    placeholder="Maximum spend per day"
-                    data-testid="input-daily-limit"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="monthly-limit">Monthly Limit</Label>
-                  <Input
-                    id="monthly-limit"
-                    type="number"
-                    value={monthlyLimit}
-                    onChange={(e) => setMonthlyLimit(e.target.value)}
-                    placeholder="Maximum spend per month"
-                    data-testid="input-monthly-limit"
-                  />
-                </div>
-              </>
+              <div className="space-y-2">
+                <Label htmlFor="renewal-frequency">Renewal Frequency *</Label>
+                <Select value={renewalFrequency} onValueChange={(value: "month" | "quarter" | "year") => setRenewalFrequency(value)}>
+                  <SelectTrigger id="renewal-frequency" data-testid="select-renewal-frequency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="month">Monthly</SelectItem>
+                    <SelectItem value="quarter">Quarterly</SelectItem>
+                    <SelectItem value="year">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Spend limit resets at the selected frequency
+                </p>
+              </div>
             )}
 
             <div className="grid grid-cols-2 gap-4">
@@ -276,22 +263,28 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
               <Label htmlFor="merchants">Allowed Merchants</Label>
               <Input
                 id="merchants"
-                value={allowedMerchants}
-                onChange={(e) => setAllowedMerchants(e.target.value)}
+                value={allowedMerchants.join(', ')}
+                onChange={(e) => setAllowedMerchants(e.target.value.split(',').map((m: string) => m.trim()).filter(Boolean))}
                 placeholder="e.g., Amazon, Office Depot (comma-separated)"
                 data-testid="input-allowed-merchants"
               />
+              <p className="text-xs text-muted-foreground">
+                Comma-separated list of merchant names
+              </p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="mcc-codes">Allowed MCC Codes</Label>
               <Input
                 id="mcc-codes"
-                value={allowedMccCodes}
-                onChange={(e) => setAllowedMccCodes(e.target.value)}
+                value={allowedMccCodes.join(', ')}
+                onChange={(e) => setAllowedMccCodes(e.target.value.split(',').map((m: string) => m.trim()).filter(Boolean))}
                 placeholder="e.g., 5734, 5411 (comma-separated)"
                 data-testid="input-mcc-codes"
               />
+              <p className="text-xs text-muted-foreground">
+                Comma-separated MCC codes
+              </p>
             </div>
 
             <div className="space-y-2">
