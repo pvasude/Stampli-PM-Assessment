@@ -17,7 +17,7 @@ interface TransactionRowProps {
   amount: string;
   cashback?: string;
   cardholder: string;
-  status: "Coded" | "Pending Receipt" | "Ready to Sync" | "Synced";
+  status: "Pending Receipt" | "Pending Coding" | "Ready to Sync";
   glAccount?: string;
   department?: string;
   costCenter?: string;
@@ -52,10 +52,9 @@ export function TransactionRow({
   const [localCostCenter, setLocalCostCenter] = useState(costCenter);
 
   const statusVariants = {
-    "Coded": "outline" as const,
     "Pending Receipt": "secondary" as const,
-    "Ready to Sync": "outline" as const,
-    "Synced": "secondary" as const,
+    "Pending Coding": "secondary" as const,
+    "Ready to Sync": "default" as const,
   };
 
   return (
@@ -139,11 +138,11 @@ export function TransactionRow({
           variant="outline"
           size="sm"
           onClick={onSyncToERP}
-          disabled={status === "Synced"}
+          disabled={status !== "Ready to Sync"}
           data-testid={`button-sync-erp-${id}`}
         >
           <RefreshCw className="h-4 w-4 mr-1" />
-          Sync to ERP
+          Sync
         </Button>
       </td>
     </tr>

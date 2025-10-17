@@ -2,7 +2,8 @@ import { useState } from "react";
 import { TransactionRow } from "@/components/TransactionRow";
 import { ReceiptUploadDialog } from "@/components/ReceiptUploadDialog";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, RefreshCw } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -22,9 +23,9 @@ const mockTransactions = [
     cashback: "$8.50",
     cardholder: "Sarah Johnson",
     status: "Pending Receipt" as const,
-    glAccount: "6200",
-    department: "Engineering",
-    costCenter: "CC-002",
+    glAccount: undefined,
+    department: undefined,
+    costCenter: undefined,
     hasReceipt: false,
   },
   {
@@ -34,10 +35,10 @@ const mockTransactions = [
     amount: "$1,245.50",
     cashback: "$12.46",
     cardholder: "Michael Chen",
-    status: "Coded" as const,
-    glAccount: "5000",
-    department: "Sales",
-    costCenter: "CC-001",
+    status: "Pending Coding" as const,
+    glAccount: undefined,
+    department: undefined,
+    costCenter: undefined,
     hasReceipt: true,
   },
   {
@@ -61,9 +62,9 @@ const mockTransactions = [
     cashback: "$6.80",
     cardholder: "David Park",
     status: "Pending Receipt" as const,
-    glAccount: "6100",
-    department: "Operations",
-    costCenter: "CC-003",
+    glAccount: undefined,
+    department: undefined,
+    costCenter: undefined,
     hasReceipt: false,
   },
   {
@@ -73,7 +74,7 @@ const mockTransactions = [
     amount: "$199.00",
     cashback: "$1.99",
     cardholder: "Sarah Johnson",
-    status: "Synced" as const,
+    status: "Ready to Sync" as const,
     glAccount: "6200",
     department: "Engineering",
     costCenter: "CC-002",
@@ -96,13 +97,34 @@ export default function Transactions() {
     return matchesSearch && matchesStatus;
   });
 
+  const readyToSyncCount = filteredTransactions.filter(txn => txn.status === "Ready to Sync").length;
+
+  const handleSyncAll = () => {
+    const readyTransactions = filteredTransactions.filter(txn => txn.status === "Ready to Sync");
+    console.log('Syncing transactions to ERP:', readyTransactions.map(t => t.id));
+    toast({
+      title: "Synced to ERP",
+      description: `${readyTransactions.length} transaction(s) successfully synced to ERP`,
+    });
+  };
+
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">Transactions</h1>
-        <p className="text-muted-foreground mt-1">
-          Code transactions and upload receipts before syncing to ERP
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold">Transactions</h1>
+          <p className="text-muted-foreground mt-1">
+            Code transactions and upload receipts before syncing to ERP
+          </p>
+        </div>
+        <Button
+          onClick={handleSyncAll}
+          disabled={readyToSyncCount === 0}
+          data-testid="button-sync-all-erp"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Sync to ERP ({readyToSyncCount})
+        </Button>
       </div>
 
       <div className="flex gap-4">
@@ -122,10 +144,9 @@ export default function Transactions() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="coded">Coded</SelectItem>
             <SelectItem value="pending-receipt">Pending Receipt</SelectItem>
+            <SelectItem value="pending-coding">Pending Coding</SelectItem>
             <SelectItem value="ready-to-sync">Ready to Sync</SelectItem>
-            <SelectItem value="synced">Synced</SelectItem>
           </SelectContent>
         </Select>
       </div>
