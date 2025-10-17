@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertInvoiceSchema, insertCardSchema, insertTransactionSchema, insertCardApprovalSchema } from "@shared/schema";
+import { insertInvoiceSchema, insertCardSchema, insertTransactionSchema, insertCardApprovalSchema, insertPaymentSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Invoice routes
@@ -365,6 +365,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Pay invoice error:", error);
       res.status(500).json({ error: "Failed to pay invoice" });
+    }
+  });
+
+  // Company Wallet routes
+  app.get("/api/wallet", async (req, res) => {
+    try {
+      const wallet = await storage.getWallet();
+      res.json(wallet);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch wallet" });
+    }
+  });
+
+  app.post("/api/wallet/add-funds", async (req, res) => {
+    try {
+      const { amount } = req.body;
+      const numAmount = parseFloat(amount);
+      
+      if (!amount || isNaN(numAmount) || numAmount <= 0) {
+        return res.status(400).json({ error: "Invalid amount. Must be a positive number." });
+      }
+      
+      const wallet = await storage.addFundsToWallet(numAmount.toString());
+      res.json(wallet);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to add funds" });
+    }
+  });
+
+  // Payment routes
+  app.get("/api/payments", async (req, res) => {
+    try {
+      const payments = await storage.getPayments();
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payments" });
+    }
+  });
+
+  app.get("/api/payments/invoice/:invoiceId", async (req, res) => {
+    try {
+      const payments = await storage.getPaymentsByInvoice(req.params.invoiceId);
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payments for invoice" });
+    }
+  });
+
+  app.post("/api/payments", async (req, res) => {
+    try {
+      const validated = insertPaymentSchema.parse(req.body);
+      const payment = await storage.createPayment(validated);
+      res.json(payment);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid payment data" });
+    }
+  });
+
+  app.patch("/api/payments/:id", async (req, res) => {
+    try {
+      const payment = await storage.updatePayment(req.params.id, req.body);
+      res.json(payment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update payment" });
     }
   });
 

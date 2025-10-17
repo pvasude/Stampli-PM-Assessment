@@ -6,6 +6,8 @@ import {
   transactions,
   glAccounts,
   costCenters,
+  companyWallet,
+  payments,
   type User, 
   type InsertUser,
   type Invoice,
@@ -18,6 +20,9 @@ import {
   type InsertTransaction,
   type GLAccount,
   type CostCenter,
+  type CompanyWallet,
+  type Payment,
+  type InsertPayment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -63,6 +68,18 @@ export interface IStorage {
   // Cost Center operations
   getCostCenters(): Promise<CostCenter[]>;
   createCostCenter(center: Omit<CostCenter, 'id'>): Promise<CostCenter>;
+
+  // Company Wallet operations
+  getWallet(): Promise<CompanyWallet | undefined>;
+  updateWalletBalance(amount: string): Promise<CompanyWallet>;
+  addFundsToWallet(amount: string): Promise<CompanyWallet>;
+
+  // Payment operations
+  getPayments(): Promise<Payment[]>;
+  getPaymentsByInvoice(invoiceId: string): Promise<Payment[]>;
+  getPayment(id: string): Promise<Payment | undefined>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  updatePayment(id: string, payment: Partial<InsertPayment>): Promise<Payment>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -229,6 +246,79 @@ export class DatabaseStorage implements IStorage {
       .values(insertCenter)
       .returning();
     return center;
+  }
+
+  // Company Wallet operations
+  async getWallet(): Promise<CompanyWallet | undefined> {
+    const [wallet] = await db.select().from(companyWallet).limit(1);
+    if (!wallet) {
+      // Initialize wallet if it doesn't exist
+      const [newWallet] = await db
+        .insert(companyWallet)
+        .values({ balance: "0" })
+        .returning();
+      return newWallet;
+    }
+    return wallet;
+  }
+
+  async updateWalletBalance(amount: string): Promise<CompanyWallet> {
+    const wallet = await this.getWallet();
+    if (!wallet) throw new Error("Wallet not found");
+    
+    const [updated] = await db
+      .update(companyWallet)
+      .set({ balance: amount, updatedAt: new Date() })
+      .where(eq(companyWallet.id, wallet.id))
+      .returning();
+    return updated;
+  }
+
+  async addFundsToWallet(amount: string): Promise<CompanyWallet> {
+    const wallet = await this.getWallet();
+    if (!wallet) throw new Error("Wallet not found");
+    
+    const currentBalance = parseFloat(wallet.balance);
+    const addAmount = parseFloat(amount);
+    const newBalance = (currentBalance + addAmount).toFixed(2);
+    
+    const [updated] = await db
+      .update(companyWallet)
+      .set({ balance: newBalance, updatedAt: new Date() })
+      .where(eq(companyWallet.id, wallet.id))
+      .returning();
+    return updated;
+  }
+
+  // Payment operations
+  async getPayments(): Promise<Payment[]> {
+    return await db.select().from(payments).orderBy(desc(payments.createdAt));
+  }
+
+  async getPaymentsByInvoice(invoiceId: string): Promise<Payment[]> {
+    return await db.select().from(payments).where(eq(payments.invoiceId, invoiceId));
+  }
+
+  async getPayment(id: string): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.id, id));
+    return payment || undefined;
+  }
+
+  async createPayment(insertPayment: InsertPayment): Promise<Payment> {
+    const [payment] = await db
+      .insert(payments)
+      .values(insertPayment)
+      .returning();
+    return payment;
+  }
+
+  async updatePayment(id: string, updateData: Partial<InsertPayment>): Promise<Payment> {
+    const [payment] = await db
+      .update(payments)
+      .set(updateData)
+      .where(eq(payments.id, id))
+      .returning();
+    return payment;
   }
 }
 

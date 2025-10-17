@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CardItem } from "@/components/CardItem";
 import { CardRequestDialog } from "@/components/CardRequestDialog";
 import { CardDetailSheet } from "@/components/CardDetailSheet";
+import { WalletCard } from "@/components/WalletCard";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import {
@@ -96,6 +97,8 @@ export default function Cards() {
         </div>
         <CardRequestDialog />
       </div>
+
+      <WalletCard />
 
       <div className="flex gap-3">
         <div className="relative flex-1">

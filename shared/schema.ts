@@ -150,3 +150,34 @@ export const costCenters = pgTable("cost_centers", {
 });
 
 export type CostCenter = typeof costCenters.$inferSelect;
+
+export const companyWallet = pgTable("company_wallet", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  balance: decimal("balance", { precision: 12, scale: 2 }).notNull().default("0"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type CompanyWallet = typeof companyWallet.$inferSelect;
+
+export const payments = pgTable("payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceId: varchar("invoice_id").notNull().references(() => invoices.id, { onDelete: 'cascade' }),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  status: text("status").notNull(), // Pending, Paid, Overdue
+  paymentMethod: text("payment_method"), // Card, ACH, Wire
+  cardId: varchar("card_id").references(() => cards.id, { onDelete: 'set null' }),
+  paidDate: timestamp("paid_date"),
+  glAccount: text("gl_account"),
+  department: text("department"),
+  costCenter: text("cost_center"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPaymentSchema = createInsertSchema(payments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type Payment = typeof payments.$inferSelect;
