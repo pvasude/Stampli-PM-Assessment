@@ -24,8 +24,9 @@ Preferred communication style: Simple, everyday language.
 - Radix UI primitives for accessible, unstyled component foundation
 - shadcn/ui component library (New York variant) for consistent design system
 - Tailwind CSS for utility-first styling with custom design tokens
-- Custom purple brand theme (#6B46C1) with light/dark mode support
+- Stampli teal brand theme (#00B6C2) with light/dark mode support
 - CSS variables for dynamic theming and color management
+- Clean, calm aesthetic with generous whitespace and icon-based actions
 
 **State Management:**
 - TanStack Query (React Query) for server state management and caching
@@ -35,8 +36,11 @@ Preferred communication style: Simple, everyday language.
 
 **Design System:**
 - Typography: Inter font family for UI, JetBrains Mono for code/data
-- Color palette: Purple primary (#6B46C1), semantic colors for status indicators
-- Card-based layouts with soft shadows and generous whitespace
+- Color palette: Teal primary (#00B6C2), semantic colors for status indicators
+- Stampli clean aesthetic: generous whitespace (16-24px), max 2 font sizes, minimal borders
+- Icon-based actions with tooltips (Eye, Lock, RefreshCw icons) replacing text-heavy buttons
+- Page layout: text-xl headlines, p-8 containers, space-y-8 sections, p-4 table cells
+- Card-based layouts with subtle shadows and simplified visual design
 - Consistent spacing and elevation system using CSS custom properties
 
 ### Backend Architecture
