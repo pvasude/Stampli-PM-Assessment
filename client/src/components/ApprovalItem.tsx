@@ -110,6 +110,7 @@ export function ApprovalItem({
               <Button
                 size="sm"
                 variant="default"
+                className="flex-1"
                 onClick={onApprove}
                 data-testid={`button-approve-${id}`}
               >
@@ -119,6 +120,7 @@ export function ApprovalItem({
               <Button
                 size="sm"
                 variant="destructive"
+                className="flex-1"
                 onClick={onReject}
                 data-testid={`button-reject-${id}`}
               >
