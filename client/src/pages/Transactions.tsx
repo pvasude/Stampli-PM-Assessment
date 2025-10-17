@@ -76,9 +76,8 @@ export default function Transactions() {
     const matchesType =
       typeFilter === "all" || txn.type === typeFilter;
     const matchesTab =
-      activeTab === "all" || 
-      (activeTab === "synced" && txn.status === "Synced") ||
-      (activeTab === "all" && txn.status !== "Synced");
+      (activeTab === "all" && txn.status !== "Synced") || 
+      (activeTab === "synced" && txn.status === "Synced");
     return matchesSearch && matchesStatus && matchesType && matchesTab;
   });
 
