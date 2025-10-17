@@ -164,6 +164,17 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
     setShowCardDetails(false); // Reset reveal state when switching cards
   }, [card.status, card.id]);
   
+  // Sync edited values when card changes
+  useEffect(() => {
+    setEditedSpendLimit(card.spendLimit);
+    setEditedAllowedMerchants(card.allowedMerchants || []);
+    setEditedAllowedMccCodes(card.allowedMccCodes || []);
+    setEditedGlAccount(card.glAccountTemplate || "");
+    setEditedDepartment(card.departmentTemplate || "");
+    setEditedCostCenter(card.costCenterTemplate || "");
+    setEditMode(false);
+  }, [card.id]);
+  
   const isInvoiceLinked = !!card.invoiceId;
 
   // Fetch all transactions from API

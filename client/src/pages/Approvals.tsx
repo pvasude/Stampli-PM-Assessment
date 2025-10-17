@@ -148,23 +148,35 @@ export default function Approvals() {
   // Combine approval and card data
   const approvals = (approvalsData || []).map(approval => {
     const card = cardsData?.find(c => c.id === approval.cardRequestId);
+    
+    // Parse proposed changes if they exist
+    let proposedChanges: any = {};
+    if (approval.proposedChanges) {
+      try {
+        proposedChanges = JSON.parse(approval.proposedChanges);
+      } catch (e) {
+        console.error("Failed to parse proposedChanges:", e);
+      }
+    }
+    
+    // Use proposed values if they exist, otherwise fall back to current card values
     return {
       id: approval.id,
       cardholderName: card?.cardholderName || "Unknown",
       purpose: card?.purpose || "No purpose provided",
       cardType: card?.isOneTimeUse ? "one-time" as const : "recurring" as const,
       transactionCount: card?.isOneTimeUse ? "1" as const : "unlimited" as const,
-      spendLimit: card ? `$${parseFloat(card.spendLimit).toLocaleString()}` : "$0",
+      spendLimit: proposedChanges.spendLimit || (card ? `$${parseFloat(card.spendLimit).toLocaleString()}` : "$0"),
       currency: card?.currency || "USD",
       validFrom: card?.validFrom ? new Date(card.validFrom).toLocaleDateString() : undefined,
       validUntil: card?.validUntil ? new Date(card.validUntil).toLocaleDateString() : undefined,
-      allowedMerchants: card?.allowedMerchants || [],
-      allowedMccCodes: card?.allowedMccCodes || [],
+      allowedMerchants: proposedChanges.allowedMerchants || card?.allowedMerchants || [],
+      allowedMccCodes: proposedChanges.allowedMccCodes || card?.allowedMccCodes || [],
       allowedCountries: card?.allowedCountries || [],
       channelRestriction: card?.channelRestriction || "both",
-      glAccountTemplate: card?.glAccountTemplate || "",
-      departmentTemplate: card?.departmentTemplate || "",
-      costCenterTemplate: card?.costCenterTemplate || "",
+      glAccountTemplate: proposedChanges.glAccountTemplate || card?.glAccountTemplate || "",
+      departmentTemplate: proposedChanges.departmentTemplate || card?.departmentTemplate || "",
+      costCenterTemplate: proposedChanges.costCenterTemplate || card?.costCenterTemplate || "",
       requestedBy: card?.requestedBy || "Unknown",
       requestDate: approval.createdAt ? new Date(approval.createdAt).toLocaleDateString() : "Unknown",
       approvalLevel: approval.approvalLevel,
