@@ -23,7 +23,8 @@ import {
   Calendar,
   MapPin,
   CreditCard,
-  DollarSign
+  DollarSign,
+  FileText
 } from "lucide-react";
 import {
   AlertDialog,
@@ -73,6 +74,7 @@ interface CardDetailSheetProps {
     departmentTemplate?: string;
     costCenterTemplate?: string;
     invoiceId?: string;
+    invoiceNumber?: string;
   };
 }
 
@@ -276,6 +278,25 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
           </SheetHeader>
 
           <div className="mt-6 space-y-6">
+            {isInvoiceLinked && (
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-md" data-testid="alert-invoice-payment">
+                <div className="flex items-start gap-2">
+                  <FileText className="h-4 w-4 text-primary mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-primary">Created from Invoice Payment</p>
+                    {card.invoiceNumber && (
+                      <p className="text-xs text-primary mt-1" data-testid="text-linked-invoice">
+                        Linked to {card.invoiceNumber}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This card is linked to an invoice and cannot be edited.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-semibold text-lg">{card.cardholderName}</h3>
@@ -290,17 +311,7 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                       : (card.renewalFrequency === "month" ? "Monthly Reset" : 
                          card.renewalFrequency === "quarter" ? "Quarterly Reset" : "Yearly Reset")}
                   </span>
-                  {isInvoiceLinked && (
-                    <Badge variant="outline" className="text-xs" data-testid="badge-invoice-linked">
-                      Invoice-Linked
-                    </Badge>
-                  )}
                 </div>
-                {isInvoiceLinked && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    This card is linked to an invoice and cannot be edited.
-                  </p>
-                )}
               </div>
               <div className="text-right">
                 <p className={`text-sm font-medium ${getStatusColor(card.status)}`}>

@@ -15,6 +15,8 @@ interface CardItemProps {
   limitType: "one-time" | "recurring";
   transactionCount?: "1" | "unlimited";
   renewalFrequency?: "month" | "quarter" | "year";
+  invoiceId?: string;
+  invoiceNumber?: string;
   onViewDetails?: () => void;
 }
 
@@ -30,6 +32,8 @@ export function CardItem({
   limitType,
   transactionCount,
   renewalFrequency,
+  invoiceId,
+  invoiceNumber,
   onViewDetails,
 }: CardItemProps) {
   const statusColors = {
@@ -68,13 +72,18 @@ export function CardItem({
                 {status}
               </Badge>
             </div>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <Badge variant={limitType === "one-time" ? "secondary" : "outline"} data-testid={`badge-card-type-${id}`}>
                 {limitType === "one-time" ? "One-Time" : "Recurring"}
               </Badge>
               <span className="text-xs text-muted-foreground" data-testid={`text-frequency-${id}`}>
                 {getFrequencyLabel()}
               </span>
+              {invoiceId && (
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20" data-testid={`badge-invoice-payment-${id}`}>
+                  Invoice Payment
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -88,6 +97,12 @@ export function CardItem({
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
+        {invoiceNumber && (
+          <div className="p-2 bg-primary/5 border border-primary/10 rounded-md">
+            <p className="text-xs text-muted-foreground">Created from Invoice Payment</p>
+            <p className="text-sm font-medium text-primary" data-testid={`text-invoice-number-${id}`}>{invoiceNumber}</p>
+          </div>
+        )}
         {purpose && (
           <p className="text-sm text-muted-foreground">{purpose}</p>
         )}

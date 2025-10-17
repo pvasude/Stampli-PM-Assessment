@@ -31,6 +31,8 @@ const mockCards = [
     channelRestriction: "both",
     limitType: "recurring" as const,
     renewalFrequency: "month" as const,
+    invoiceId: "inv-001",
+    invoiceNumber: "INV-2024-001",
   },
   {
     id: "2",
@@ -60,6 +62,8 @@ const mockCards = [
     validUntil: "2024-10-31",
     limitType: "one-time" as const,
     transactionCount: "unlimited" as const,
+    invoiceId: "inv-003",
+    invoiceNumber: "INV-2024-003",
   },
   {
     id: "4",
