@@ -39,8 +39,8 @@ export interface IStorage {
   // Card operations
   getCards(): Promise<Card[]>;
   getCard(id: string): Promise<Card | undefined>;
-  createCard(card: InsertCard): Promise<Card>;
-  updateCard(id: string, card: Partial<InsertCard>): Promise<Card>;
+  createCard(card: InsertCard & Partial<Pick<Card, 'cardNumber' | 'cvv' | 'last4' | 'expiryDate' | 'currentSpend'>>): Promise<Card>;
+  updateCard(id: string, card: Partial<InsertCard> & Partial<Pick<Card, 'cardNumber' | 'cvv' | 'last4' | 'expiryDate' | 'currentSpend'>>): Promise<Card>;
   deleteCard(id: string): Promise<void>;
 
   // Card Approval operations
