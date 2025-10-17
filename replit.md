@@ -12,6 +12,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 17, 2025 - Payment Flow & Declined Transaction Handling (Complete):**
+- Redesigned PayInvoiceDialog with two payment modes:
+  - "Pay via Stampli": Creates card + immediately charges it, updates invoice to "Paid"
+  - "Share card with vendor": Creates card + shows details for sharing, updates invoice to "Card Shared - Awaiting Payment"
+- Declined transaction persistence: Failed transactions now saved to database with status="Declined"
+- Informative decline reasons: "Exceeds card limit" or "Insufficient wallet balance" with specific amounts
+- Updated CardDetailSheet to fetch real transactions from API instead of mock data
+- Declined transactions visible in Card Details "Declined" tab with proper formatting
+- API returns 400 status (not 500 error) for declined transactions with detailed information
+- Added lockedCardId field to invoices table for future payment locking feature
+
 **October 17, 2025 - Wallet & Transaction Decline Logic (Complete):**
 - Implemented company-level wallet system with balance tracking
 - Added wallet UI on Cards page: displays balance, add funds dialog with validation
