@@ -56,6 +56,28 @@ export function TransactionRow({
   const [localGL, setLocalGL] = useState(glAccount);
   const [localDepartment, setLocalDepartment] = useState(department);
   const [localCostCenter, setLocalCostCenter] = useState(costCenter);
+  const [localHasReceipt, setLocalHasReceipt] = useState(hasReceipt);
+
+  // Calculate actual status based on receipt and coding
+  const calculateStatus = (): "Pending Receipt" | "Pending Coding" | "Ready to Sync" => {
+    const hasCoding = localGL && localDepartment && localCostCenter;
+    
+    if (!localHasReceipt && !hasCoding) {
+      return "Pending Receipt"; // Primary issue is receipt
+    }
+    
+    if (!localHasReceipt) {
+      return "Pending Receipt";
+    }
+    
+    if (!hasCoding) {
+      return "Pending Coding";
+    }
+    
+    return "Ready to Sync";
+  };
+
+  const actualStatus = calculateStatus();
 
   const statusVariants = {
     "Pending Receipt": "secondary" as const,
@@ -86,9 +108,14 @@ export function TransactionRow({
          ) : "-"}
       </td>
       <td className="p-3">
-        <Badge variant={statusVariants[status]} data-testid={`badge-status-${id}`}>
-          {status}
-        </Badge>
+        <div className="flex flex-col gap-1">
+          <Badge variant={statusVariants[actualStatus]} data-testid={`badge-status-${id}`}>
+            {actualStatus}
+          </Badge>
+          {!localHasReceipt && !localGL && !localDepartment && !localCostCenter && (
+            <span className="text-xs text-muted-foreground">Also Pending Coding</span>
+          )}
+        </div>
       </td>
       <td className="p-3">
         <Select value={localGL} onValueChange={(value) => {
@@ -138,14 +165,17 @@ export function TransactionRow({
         </Select>
       </td>
       <td className="p-3">
-        {hasReceipt ? (
+        {localHasReceipt ? (
           <Check className="h-4 w-4 text-muted-foreground" data-testid={`icon-receipt-uploaded-${id}`} />
-        ) : status === "Pending Receipt" ? (
+        ) : actualStatus === "Pending Receipt" || !localHasReceipt ? (
           <Button 
             variant="ghost" 
             size="icon"
             className="h-8 w-8"
-            onClick={onUploadReceipt}
+            onClick={() => {
+              setLocalHasReceipt(true);
+              onUploadReceipt?.();
+            }}
             data-testid={`button-upload-receipt-${id}`}
           >
             <Upload className="h-4 w-4" />
@@ -159,7 +189,7 @@ export function TransactionRow({
           variant="outline"
           size="sm"
           onClick={onSyncToERP}
-          disabled={status !== "Ready to Sync"}
+          disabled={actualStatus !== "Ready to Sync"}
           data-testid={`button-sync-erp-${id}`}
         >
           <RefreshCw className="h-4 w-4 mr-1" />

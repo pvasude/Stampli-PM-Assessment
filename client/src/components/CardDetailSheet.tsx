@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -24,7 +24,9 @@ import {
   MapPin,
   CreditCard,
   DollarSign,
-  FileText
+  FileText,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import {
   AlertDialog,
@@ -142,7 +144,15 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
   const [editedGlAccount, setEditedGlAccount] = useState(card.glAccountTemplate || "");
   const [editedDepartment, setEditedDepartment] = useState(card.departmentTemplate || "");
   const [editedCostCenter, setEditedCostCenter] = useState(card.costCenterTemplate || "");
+  const [showCardDetails, setShowCardDetails] = useState(false);
+  const [cardStatus, setCardStatus] = useState<"Active" | "Locked" | "Suspended" | "Pending Approval">(card.status);
   const { toast } = useToast();
+  
+  // Sync cardStatus with card prop when card changes
+  useEffect(() => {
+    setCardStatus(card.status);
+    setShowCardDetails(false); // Reset reveal state when switching cards
+  }, [card.status, card.id]);
   
   const isInvoiceLinked = !!card.invoiceId;
 
@@ -205,6 +215,7 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
 
   const handleLock = () => {
     console.log("Locking card:", card.id);
+    setCardStatus("Locked");
     toast({
       title: "Card locked",
       description: "The card has been temporarily locked and cannot be used for transactions",
@@ -214,6 +225,7 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
 
   const handleUnlock = () => {
     console.log("Unlocking card:", card.id);
+    setCardStatus("Active");
     toast({
       title: "Card unlocked",
       description: "The card is now active and can be used for transactions",
@@ -222,6 +234,7 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
 
   const handleSuspend = () => {
     console.log("Suspending card:", card.id);
+    setCardStatus("Suspended");
     toast({
       title: "Card suspended",
       description: "The card has been permanently suspended and cannot be reactivated",
@@ -314,17 +327,61 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                 </div>
               </div>
               <div className="text-right">
-                <p className={`text-sm font-medium ${getStatusColor(card.status)}`}>
-                  {card.status}
+                <p className={`text-sm font-medium ${getStatusColor(cardStatus)}`} data-testid="text-card-status">
+                  {cardStatus}
                 </p>
                 <p className="text-2xl font-bold mt-1">{card.currentSpend}</p>
                 <p className="text-xs text-muted-foreground">of {card.spendLimit}</p>
               </div>
             </div>
 
-            {card.status !== "Pending Approval" && card.status !== "Suspended" && (
+            {card.cardNumber && cardStatus !== "Pending Approval" && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-medium">Card Details</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowCardDetails(!showCardDetails)}
+                      data-testid="button-toggle-card-details"
+                    >
+                      {showCardDetails ? (
+                        <><EyeOff className="h-4 w-4 mr-2" />Hide</>
+                      ) : (
+                        <><Eye className="h-4 w-4 mr-2" />Reveal</>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Card Number</Label>
+                      <p className="font-mono text-sm mt-1" data-testid="text-card-number">
+                        {showCardDetails ? card.cardNumber : `•••• •••• •••• ${card.cardNumber.slice(-4)}`}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Expiry Date</Label>
+                        <p className="font-mono text-sm mt-1" data-testid="text-expiry">
+                          {showCardDetails ? "12/26" : "••/••"}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">CVV</Label>
+                        <p className="font-mono text-sm mt-1" data-testid="text-cvv">
+                          {showCardDetails ? "123" : "•••"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {cardStatus !== "Pending Approval" && cardStatus !== "Suspended" && (
               <div className="flex gap-2 flex-wrap">
-                {card.status === "Active" && (
+                {cardStatus === "Active" && (
                   <>
                     <Button 
                       variant="outline" 
@@ -346,16 +403,27 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                     </Button>
                   </>
                 )}
-                {card.status === "Locked" && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleUnlock}
-                    data-testid="button-unlock-card"
-                  >
-                    <Unlock className="h-4 w-4 mr-2" />
-                    Unlock Card
-                  </Button>
+                {cardStatus === "Locked" && (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleUnlock}
+                      data-testid="button-unlock-card"
+                    >
+                      <Unlock className="h-4 w-4 mr-2" />
+                      Unlock Card
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowSuspendDialog(true)}
+                      data-testid="button-suspend-card"
+                    >
+                      <Ban className="h-4 w-4 mr-2" />
+                      Suspend
+                    </Button>
+                  </>
                 )}
                 <Button 
                   variant="outline" 
@@ -368,7 +436,7 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                 </Button>
               </div>
             )}
-            {card.status === "Suspended" && (
+            {cardStatus === "Suspended" && (
               <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
                 <p className="text-sm text-destructive">
                   This card has been permanently suspended and cannot be modified or shared.
@@ -381,7 +449,7 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
               </div>
             )}
 
-            {card.status === "Active" && shouldAutoSuspend() && (
+            {cardStatus === "Active" && shouldAutoSuspend() && (
               <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-md" data-testid="alert-auto-suspend">
                 <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
                   Auto-Suspend Triggered
