@@ -95,6 +95,7 @@ const mockInvoices = [
 export default function Cards() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [selectedCard, setSelectedCard] = useState<typeof mockCards[0] | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 
@@ -104,7 +105,9 @@ export default function Cards() {
       card.purpose?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || card.status.toLowerCase().replace(" ", "-") === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
+    const matchesType =
+      typeFilter === "all" || card.limitType === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
   });
   
   const handleViewDetails = (card: typeof mockCards[0]) => {
@@ -135,6 +138,16 @@ export default function Cards() {
             data-testid="input-search-cards"
           />
         </div>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[180px]" data-testid="select-type-filter">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="one-time">One-Time Cards</SelectItem>
+            <SelectItem value="recurring">Recurring Cards</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]" data-testid="select-status-filter">
             <SelectValue />
