@@ -1,0 +1,54 @@
+
+
+### 🎨 **Clean UI Redesign Prompt (Stampli-Style)**
+
+Redesign the interface to feel **clean, calm, and cohesive**, in line with Stampli’s modern AP aesthetic. The focus should be **clarity, whitespace, and hierarchy**, not decoration.
+
+---
+
+#### **Layout & Alignment**
+
+* Fix all **alignment and spacing issues** — use a consistent grid, even padding, and balanced margins across cards and sections.
+* Maintain clear **vertical rhythm**: equal spacing between rows, consistent section headers.
+* Align icons, buttons, and input fields precisely for visual flow.
+
+---
+
+#### **Typography & Hierarchy**
+
+* Use **no more than two font sizes** (e.g., headline + body) and one consistent type weight.
+* Avoid excessive bolding; emphasize hierarchy through **color contrast, spacing, or icons**, not font weight.
+* Maintain generous line spacing and left alignment for readability.
+
+---
+
+#### **Visual Simplification**
+
+* Remove redundant borders, dividers, and shadows — rely on **whitespace for separation**.
+* Replace repetitive text labels with **icon buttons, glyphs, pictograms, or visual affordances** wherever intuitive (e.g., 🖊 for edit, 🗑 for delete, ➕ for add).
+* Ensure icons have **consistent size, stroke weight, and alignment**.
+* Use **tooltips** on all icon-only buttons to clarify actions without cluttering the interface (e.g., hover over 🖊 shows “Edit Card”).
+
+---
+
+#### **Color & Highlight Rules**
+
+* Establish **one primary action color** (Stampli teal #00B6C2 or equivalent) and **one secondary accent** (e.g., light blue or green for success states).
+* Keep neutral grays for cards, dividers, and text; avoid multiple bright or competing colors.
+* Use highlights **sparingly** — only for active elements or alerts.
+* Ensure hover/selected states are consistent and subtle (slight tint or underline).
+
+---
+
+#### **Interaction & Information Density**
+
+* Use **progressive disclosure**: keep advanced details hidden until expanded or hovered.
+* Add **tooltips** or **info icons (ⓘ)** to explain settings, spend limits, or controls inline without adding bulk text.
+* Maintain at least **16–24 px padding** between interactive elements to improve touch/click clarity.
+
+---
+
+#### **Overall Tone**
+
+The final design should feel **lightweight, professional, and user-centric** — plenty of whitespace, consistent spacing, restrained typography, and intuitive iconography.
+It should communicate **calm control** — clear enough for an accountant, friendly enough for an AP clerk, and polished enough for a CFO dashboard.

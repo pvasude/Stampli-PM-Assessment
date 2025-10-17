@@ -1,21 +1,18 @@
-# Design Guidelines: Stampli AP + Cards - Purple Brand Variant
+# Design Guidelines: Stampli AP + Cards - Clean UI Redesign
 
-## Design Approach
+## Design Philosophy
 
-**Selected Approach**: Design System (Enterprise Finance Platform)
+**Core Principle**: Clean, calm, and cohesive - emphasizing clarity, whitespace, and visual hierarchy over decoration.
 
-**Justification**: Information-dense invoice management platform requiring clarity, efficiency, and seamless collaboration. Drawing inspiration from:
-- **Stripe Dashboard**: Clean data hierarchy, card-based layouts
-- **Linear**: Typography-first design, efficient workflows
-- **Notion**: Collaborative features, inline commenting
-- **Intercom**: Integrated messaging patterns
+**Inspired By**: Stampli's modern AP aesthetic with professional enterprise finance platform design patterns.
 
-**Key Design Principles**:
-1. Invoice workflows as primary focus
-2. Real-time collaboration embedded throughout
-3. AI assistance (Billy bot) contextually integrated
-4. Single-screen efficiency with slide-out details
-5. Information density with visual breathing room
+**Key Tenets**:
+1. Whitespace as the primary separator (not borders/shadows)
+2. Icon-based actions with tooltips for clarity
+3. Consistent spacing and alignment
+4. Minimal decoration, maximum information
+5. Progressive disclosure for complexity
+6. Calm control - clear for accountants, friendly for AP clerks, polished for CFOs
 
 ---
 
@@ -23,155 +20,212 @@
 
 ### A. Color Palette
 
+**Primary Action Color**: Stampli Teal (#00B6C2 / 186 100% 38%)
+**Secondary Accent**: Light Blue/Green for success states (#10B981 / 160 84% 39%)
+
 **Light Mode**:
-- Primary Brand: 258 59% 51% (#6B46C1 - Stampli purple)
-- Primary Hover: 258 59% 43%
-- Primary Light: 258 59% 96% (subtle backgrounds)
-- Background Primary: 0 0% 100%
-- Background Secondary: 252 6% 97%
-- Background Card: 0 0% 100%
-- Border: 240 6% 90%
-- Text Primary: 222 47% 11%
-- Text Secondary: 215 14% 34%
-- Text Muted: 215 10% 55%
-- Success: 142 76% 36%
+- Primary: 186 100% 38% (Stampli teal #00B6C2)
+- Primary Hover: 186 100% 32%
+- Primary Light: 186 100% 96% (subtle backgrounds)
+- Background: 0 0% 100%
+- Background Secondary: 210 20% 98%
+- Card Background: 0 0% 100%
+- Border (minimal use): 220 13% 91%
+- Text Primary: 220 13% 9%
+- Text Secondary: 215 16% 47%
+- Text Tertiary: 215 10% 60%
+- Success: 160 84% 39%
 - Warning: 38 92% 50%
-- Error: 0 84% 60%
-- AI Accent: 280 70% 60% (Billy bot interactions)
+- Error: 0 72% 51%
 
 **Dark Mode**:
-- Primary Brand: 258 59% 58%
-- Primary Hover: 258 59% 65%
-- Background Primary: 222 47% 11%
-- Background Secondary: 217 33% 17%
-- Background Card: 217 33% 19%
-- Border: 215 20% 27%
-- Text Primary: 210 40% 98%
-- Text Secondary: 214 15% 75%
+- Primary: 186 100% 45%
+- Primary Hover: 186 100% 52%
+- Background: 220 13% 9%
+- Background Secondary: 215 20% 12%
+- Card Background: 215 18% 15%
+- Border: 215 15% 25%
+- Text Primary: 210 20% 98%
+- Text Secondary: 215 15% 75%
+- Text Tertiary: 215 12% 60%
 
-### B. Typography
+### B. Typography System
 
 **Font Families**:
-- Primary: 'Inter', system-ui, sans-serif (Google Fonts)
-- Monospace: 'JetBrains Mono', monospace (amounts, invoice IDs)
+- Primary: 'Inter', system-ui, sans-serif
+- Monospace: 'JetBrains Mono', monospace (amounts, IDs)
 
-**Type Scale**:
-- Page Title: text-2xl font-semibold
-- Section Header: text-lg font-semibold
-- Card Title: text-base font-medium
-- Body: text-sm
-- Caption/Labels: text-xs
-- Financial Data: text-sm font-mono tabular-nums
+**Type Scale (2 sizes maximum)**:
+- **Headline**: text-xl (20px) - Page titles, major sections
+- **Body**: text-sm (14px) - All other text, labels, buttons
+- **Caption**: text-xs (12px) - Only for supplementary info
 
-### C. Layout System
+**Font Weight**:
+- Regular (400) for body text
+- Medium (500) for headlines and emphasis
+- Avoid excessive bolding - use color contrast and spacing for hierarchy
 
-**Spacing Primitives**: Tailwind units **2, 4, 6, 8, 12** for consistent rhythm
-- Card padding: p-6
-- Component spacing: gap-4, gap-6
-- Page margins: px-6 lg:px-8
+**Line Height**: Generous spacing (1.6-1.8) for readability
+
+### C. Layout & Spacing System
+
+**Spacing Primitives** (Consistent rhythm):
+- Small: 12px (gap-3, p-3)
+- Medium: 16px (gap-4, p-4)
+- Large: 24px (gap-6, p-6)
+- Extra Large: 32px (gap-8, p-8)
+
+**Padding Between Interactive Elements**: Minimum 16px, recommended 24px for touch/click clarity
+
+**Card Padding**: p-6 (24px) - consistent across all card elements
+
+**Grid Alignment**:
+- All elements aligned to consistent grid
+- Equal vertical rhythm between rows
+- Icons, buttons, inputs precisely aligned
+- Balanced margins across sections
 
 **Container Strategy**:
-- Main content: max-w-7xl mx-auto
-- Slide-out panels: w-full lg:w-[480px] for detail views
-- Modals: max-w-2xl for forms, max-w-4xl for invoice details
+- Main content: max-w-7xl mx-auto with px-6
+- Detail panels: w-full lg:w-[480px]
+- Generous outer margins for breathing room
 
-**Grid Patterns**:
-- Dashboard KPIs: grid-cols-2 lg:grid-cols-4 gap-4
-- Invoice table: Full-width with sticky columns
-- Split view: 60/40 ratio (list/detail) on lg+ breakpoints
+### D. Visual Simplification
 
-### D. Component Library
+**Border Usage** (Minimal):
+- Remove redundant borders and dividers
+- Use whitespace as primary separator
+- Only add borders where absolutely necessary for clarity
+- When used: subtle, consistent stroke (1px)
+
+**Shadow Usage** (Sparing):
+- Only for floating elements (modals, tooltips, dropdowns)
+- Subtle depths: shadow-sm for cards (if needed), shadow-lg for modals
+- No drop shadows on static elements
+
+**Icon System**:
+- **Consistent**: Same size (h-4 w-4 or h-5 w-5), stroke weight, alignment
+- **Intuitive replacements**:
+  - ✏️ Edit → Pencil icon
+  - 🗑️ Delete → Trash icon  
+  - ➕ Add → Plus icon
+  - 🔍 Search → Search icon
+  - ⚙️ Settings → Cog icon
+  - 👁️ View → Eye icon
+  - 📎 Attach → Paperclip icon
+- **Always include tooltips** on icon-only buttons for accessibility
+
+### E. Component Patterns
 
 **Navigation**:
-- Top bar (h-16): Logo, global search, Billy AI chat trigger, notifications, profile
-- Left sidebar (w-64, collapsible): Main nav with purple active states (bg-primary/10 border-l-4)
-- Breadcrumbs below top bar for context
+- Clean sidebar with minimal styling
+- Active state: subtle teal background (bg-primary/10) without heavy borders
+- Icon + label alignment consistent throughout
+- Hover states: very subtle (barely perceptible background shift)
 
-**Dashboard KPIs**:
-- Stat cards: Large metric (text-3xl font-bold) + label + trend arrow
-- Color-coded borders (left-4): Purple for totals, green for approved, amber for pending
-- Compact layout with icons (Heroicons) aligned right
+**Cards**:
+- Clean backgrounds with ample padding (p-6)
+- No heavy borders - rely on subtle background contrast
+- Consistent card-to-card spacing (gap-4 or gap-6)
+- Avoid nesting cards in cards
 
-**Invoice-Centric Cards**:
-- Primary layout: Invoice header (vendor, amount, status badge) + expandable details
-- Status badges: rounded-full px-3 py-1 text-xs font-medium (Pending Approval: amber, Approved: green, Coding: blue, Synced: purple)
-- Quick actions menu (three-dots) always visible on hover
-- Inline GL coding with dropdown + autocomplete
-
-**Messaging & Collaboration**:
-- Threaded comments embedded in invoice cards (expandable section)
-- @mentions with purple highlight, avatar chips
-- Billy AI responses: Distinct container with gradient background (purple-to-violet) + bot avatar
-- Typing indicators for active collaborators
-- Unread message count badges on invoices
-
-**Billy AI Integration**:
-- Floating chat button (bottom-right, purple gradient)
-- Slide-in chat panel with conversation history
-- AI suggestions inline: "Billy suggests coding to: [GL Code]" with one-click apply
-- Context-aware: Knows current invoice, suggests approvers, flags anomalies
-
-**Data Tables**:
-- Sticky header with column sorting
-- Zebra striping (even:bg-gray-50/50)
-- Expandable rows for invoice line items
-- Inline editing with focus:ring-2 ring-primary
-- Multi-select checkboxes for bulk actions
+**Buttons**:
+- Icon + text or icon-only (with tooltip)
+- Minimal padding, consistent sizing
+- Subtle hover states (use elevation system)
+- Primary action in teal, secondary in ghost/outline variants
 
 **Forms & Inputs**:
-- Labels: text-sm font-medium text-secondary mb-1
-- Inputs: border-gray-300 focus:border-primary focus:ring-2 ring-primary/20 rounded-md
-- Validation: Inline error messages (text-error text-xs mt-1)
-- Auto-save indicators: Small checkmark with "Saved" text
+- Clean inputs with minimal borders
+- Labels: text-sm, subtle color (text-secondary)
+- Focus states: ring-2 ring-primary/20
+- Inline validation with minimal visual weight
 
-**Slide-Out Panels**:
-- Invoice detail drawer: Slide from right, full height, shadow-2xl
-- Header: Invoice # + vendor + close button (X)
-- Tabbed sections: Details | Line Items | Activity | Messages
-- Footer: Action buttons (Approve, Reject, Request Changes)
-
-**Approval Workflows**:
-- Horizontal timeline: Circles connected by lines, current step highlighted purple
-- Approver cards: Avatar + name + timestamp + action taken
-- Pending approver: Pulsing purple ring, action buttons visible
-
-**Empty States**:
-- Centered icon (text-gray-300) + heading + description
-- Billy AI suggestion: "Need help? Ask Billy to find invoices for you"
-- CTA button to trigger relevant action
+**Tables**:
+- Clean rows with hover states
+- No zebra striping (use whitespace)
+- Sticky headers where needed
+- Inline editing with clear affordances
+- Icon actions aligned right
 
 **Status Indicators**:
-- Real-time sync status: Small animated icon (syncing) or checkmark (synced)
-- Approval progress: Linear progress bar (purple gradient)
-- GL coding completion: Percentage badge with color transition (red→amber→green)
+- Minimal badge design (rounded-full, small padding)
+- Color-coded but not garish
+- Consistent sizing across application
 
-### E. Dashboard-Specific Patterns
+**Progressive Disclosure**:
+- Hide advanced details until expanded/hovered
+- Info icons (ⓘ) with tooltips for inline explanations
+- Expandable sections for complex information
+- Tooltips on all icon buttons
 
-**Single-Screen Workflow**:
-- Master-detail layout: Invoice list left (40%), detail panel right (60%) on desktop
-- Mobile: Stack with slide-over detail view
-- Persistent filters/search at top, results update live
-- Keyboard shortcuts overlay (Command+K menu)
+### F. Interaction Patterns
 
-**Information Density**:
-- Compact row height in tables (h-12) with clear hover states
-- Condensed card layouts with strategic use of dividers
-- Expandable sections to reveal complexity on demand
-- Smart truncation with tooltips on hover
+**Hover States**:
+- Consistent and subtle throughout
+- Slight background tint or underline
+- Use elevation utilities: hover-elevate, active-elevate-2
+- Avoid jarring color shifts
 
-**Collaboration Hub**:
-- Activity feed sidebar: Recent comments, approvals, Billy actions
-- Live presence indicators: Small colored dots on avatars
-- Notification center: Grouped by type (Mentions, Approvals, AI Suggestions)
+**Focus States**:
+- Clear but not overwhelming
+- ring-2 ring-primary/20 for keyboard navigation
+- Consistent across all interactive elements
 
-**No Images Required**: Enterprise dashboard with data-driven UI, Heroicons for all icons, user avatars (initials in purple gradients if no photo), Billy AI bot avatar (distinct bot icon in gradient circle).
+**Loading States**:
+- Minimal spinners or skeleton screens
+- Don't block the entire UI
+- Show progress where meaningful
+
+**Empty States**:
+- Clean centered design
+- Subtle icon + clear messaging
+- Single clear CTA
+
+### G. Information Density
+
+**Balance**:
+- Compact where appropriate (tables, lists)
+- Generous where needed (forms, detail views)
+- Smart truncation with expand options
+- Tooltips for overflow content
+
+**Hierarchy**:
+- Use size, color, and spacing (not weight)
+- 3 levels of text color: Primary → Secondary → Tertiary
+- Whitespace creates visual grouping
+- Icons provide visual anchors
+
+### H. Accessibility & Performance
+
+- ARIA labels on all icon buttons
+- Keyboard navigation fully supported (Tab, Enter, Esc)
+- Tooltips on hover/focus
+- High contrast maintained in both light/dark modes
+- Reduced motion preferences honored
+- Touch targets minimum 44x44px
 
 ---
 
-## Accessibility & Performance
+## Design Checklist
 
-- Consistent dark mode across all components including form inputs
-- ARIA labels for icon buttons, screen reader announcements for AI suggestions
-- Keyboard navigation for all workflows (Tab, Enter, Esc)
-- Reduced motion preferences honored (prefers-reduced-motion)
-- Lazy load invoice details, virtual scrolling for large tables
+✅ **Layout**: Consistent grid, even padding, balanced margins
+✅ **Typography**: Max 2 font sizes, minimal bolding, generous line height
+✅ **Visual**: Whitespace over borders, icons with tooltips, subtle shadows
+✅ **Color**: Single teal primary, neutral grays, sparing highlights  
+✅ **Spacing**: 16-24px between interactive elements
+✅ **Interaction**: Progressive disclosure, consistent hover states
+✅ **Tone**: Lightweight, professional, calm control
+
+---
+
+## Stampli Teal Usage
+
+**Primary Actions**: Teal (#00B6C2)
+- Primary buttons
+- Active navigation items
+- Links and actionable elements
+- Focus rings
+
+**Avoid**: Overuse of teal - use sparingly for maximum impact
+**Balance**: Neutral grays for 90% of UI, teal for the critical 10%
