@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreditCard, Building, FileCheck, CheckCircle2, AlertCircle, Sparkles, DollarSign } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface PayInvoiceDialogProps {
   trigger?: React.ReactNode;
@@ -40,6 +41,7 @@ interface PayInvoiceDialogProps {
 export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogProps) {
   const [open, setOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const { toast } = useToast();
   
   // Card generation fields - pre-populated from invoice
   const [cardholderName, setCardholderName] = useState("");
@@ -69,18 +71,30 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
     
     console.log("Generating card for invoice:", cardDetails);
     onPay?.("card", cardDetails);
+    toast({
+      title: "Payment processed",
+      description: `Virtual card generated for ${invoice.invoiceNumber} - ${cardLimit}`,
+    });
     setOpen(false);
   };
 
   const handlePayWithACH = () => {
     console.log("Processing ACH payment for invoice:", invoice.id);
     onPay?.("ach", { invoiceId: invoice.id });
+    toast({
+      title: "ACH payment initiated",
+      description: `Processing ACH payment for ${invoice.invoiceNumber}`,
+    });
     setOpen(false);
   };
 
   const handlePayWithCheck = () => {
     console.log("Processing check payment for invoice:", invoice.id);
     onPay?.("check", { invoiceId: invoice.id });
+    toast({
+      title: "Check issued",
+      description: `Check will be mailed for ${invoice.invoiceNumber}`,
+    });
     setOpen(false);
   };
 
@@ -236,7 +250,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
             <Button 
               onClick={handlePayWithCard} 
               className="w-full" 
-              disabled={!cardholderName.trim() || !validUntil.trim()}
+              disabled={!cardholderName.trim()}
               data-testid="button-generate-card"
             >
               Generate Card & Pay

@@ -22,6 +22,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { CreditCard } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 interface CardRequestDialogProps {
   trigger?: React.ReactNode;
@@ -30,6 +31,7 @@ interface CardRequestDialogProps {
 export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
   const [open, setOpen] = useState(false);
   const [isOneTimeUse, setIsOneTimeUse] = useState(false);
+  const { toast } = useToast();
   
   // Basic fields
   const [cardholderName, setCardholderName] = useState("");
@@ -102,6 +104,10 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
     };
     
     console.log("Card request submitted (will go to approval):", requestData);
+    toast({
+      title: "Card request submitted",
+      description: `Request for ${cardholderName} sent for approval`,
+    });
     setOpen(false);
   };
 
