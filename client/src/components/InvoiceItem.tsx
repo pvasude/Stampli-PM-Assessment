@@ -68,7 +68,7 @@ export function InvoiceItem({
           >
             View Details
           </Button>
-          {status !== "Paid" && (
+          {status === "Approved" && (
             <PayInvoiceDialog
               invoice={{ id, invoiceNumber, vendorName, amount }}
               trigger={
@@ -84,6 +84,16 @@ export function InvoiceItem({
                 console.log(`Payment for ${id} via ${method}:`, details);
               }}
             />
+          )}
+          {status === "Pending" && (
+            <Button 
+              size="sm" 
+              className="flex-1"
+              disabled
+              data-testid={`button-pay-invoice-${id}`}
+            >
+              Pending Approval
+            </Button>
           )}
         </div>
       </CardContent>
