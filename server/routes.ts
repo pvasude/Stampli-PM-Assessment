@@ -136,10 +136,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/card-approvals/:id", async (req, res) => {
     try {
+      console.log("PATCH /api/card-approvals/:id request body:", JSON.stringify(req.body, null, 2));
       const validated = insertCardApprovalSchema.partial().parse(req.body);
-      const approval = await storage.updateCardApproval(req.params.id, validated);
+      
+      // Convert date strings to Date objects if present
+      const approvalData = {
+        ...validated,
+        approvedAt: validated.approvedAt ? new Date(validated.approvedAt) : undefined,
+      };
+      
+      const approval = await storage.updateCardApproval(req.params.id, approvalData);
       res.json(approval);
     } catch (error) {
+      console.error("PATCH /api/card-approvals/:id error:", error);
       res.status(500).json({ error: "Failed to update approval" });
     }
   });

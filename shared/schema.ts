@@ -97,6 +97,8 @@ export const cardApprovals = pgTable("card_approvals", {
 export const insertCardApprovalSchema = createInsertSchema(cardApprovals).omit({
   id: true,
   createdAt: true,
+}).extend({
+  approvedAt: z.string().optional().nullable().or(z.date().optional()),
 });
 
 export type InsertCardApproval = z.infer<typeof insertCardApprovalSchema>;
