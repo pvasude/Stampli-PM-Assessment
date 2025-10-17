@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import { PayInvoiceDialog } from "./PayInvoiceDialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface InvoiceItemProps {
   id: string;
@@ -61,15 +62,24 @@ export function InvoiceItem({
           <p className="text-sm text-muted-foreground">{description}</p>
         )}
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1"
-            onClick={onViewDetails}
-            data-testid={`button-view-details-${id}`}
-          >
-            View Details
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full opacity-50 cursor-not-allowed"
+                  disabled
+                  data-testid={`button-view-details-${id}`}
+                >
+                  View Details
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Feature not implemented in this demo</p>
+            </TooltipContent>
+          </Tooltip>
           {(status === "Approved" || status === "Overdue") && (
             <PayInvoiceDialog
               invoice={{ id, invoiceNumber, vendorName, amount, paymentTerms }}
