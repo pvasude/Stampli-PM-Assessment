@@ -43,7 +43,7 @@ Preferred communication style: Simple, everyday language.
 - TanStack Query (React Query) for server state management and caching
 - React Hook Form with Zod resolvers for form state and validation
 - Local component state for UI interactions
-- Mock data patterns for development (to be replaced with API calls)
+- Real-time data fetching from PostgreSQL database via RESTful API
 
 **Design System:**
 - Typography: Inter font family for UI, JetBrains Mono for code/data
@@ -69,9 +69,10 @@ Preferred communication style: Simple, everyday language.
 - Runtime error overlay for development (Replit-specific tooling)
 
 **Storage Layer:**
-- In-memory storage implementation (MemStorage class) for development
-- Interface-based storage abstraction (IStorage) for future database integration
-- Designed to be replaced with PostgreSQL + Drizzle ORM
+- PostgreSQL database with Drizzle ORM for data persistence
+- DatabaseStorage class implementing IStorage interface
+- Neon serverless PostgreSQL as the database provider
+- Full CRUD operations for all entities with type safety
 
 ### Database Design
 
