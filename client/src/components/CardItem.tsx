@@ -1,13 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CreditCard, MoreVertical } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { CreditCard } from "lucide-react";
 
 interface CardItemProps {
   id: string;
@@ -22,7 +16,6 @@ interface CardItemProps {
   transactionCount?: "1" | "unlimited";
   renewalFrequency?: "month" | "quarter" | "year";
   onViewDetails?: () => void;
-  onManageCard?: () => void;
 }
 
 export function CardItem({
@@ -38,7 +31,6 @@ export function CardItem({
   transactionCount,
   renewalFrequency,
   onViewDetails,
-  onManageCard,
 }: CardItemProps) {
   const statusColors = {
     Active: "bg-chart-1 text-white",
@@ -86,21 +78,14 @@ export function CardItem({
             </div>
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" data-testid={`button-menu-${id}`}>
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onViewDetails} data-testid={`button-view-details-${id}`}>
-              View Details
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onManageCard} data-testid={`button-manage-${id}`}>
-              Manage Card
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={onViewDetails}
+          data-testid={`button-view-details-${id}`}
+        >
+          View Details
+        </Button>
       </CardHeader>
       <CardContent className="space-y-3">
         {purpose && (

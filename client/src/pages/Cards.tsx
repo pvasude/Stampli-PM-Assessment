@@ -168,7 +168,6 @@ export default function Cards() {
             key={card.id}
             {...card}
             onViewDetails={() => handleViewDetails(card)}
-            onManageCard={() => console.log(`Manage card: ${card.id}`)}
           />
         ))}
       </div>
