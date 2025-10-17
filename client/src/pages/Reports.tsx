@@ -43,7 +43,9 @@ type Payment = {
   invoiceId: string;
   amount: string;
   paymentMethod: string;
-  transactionDate: string;
+  status: string;
+  paidDate: string | null;
+  createdAt: string;
 };
 
 export default function Reports() {
@@ -133,7 +135,7 @@ export default function Reports() {
     
     // Filter invoices and payments for this month
     const thisMonthPayments = payments.filter(p => 
-      new Date(p.transactionDate) >= monthStart
+      p.paidDate && new Date(p.paidDate) >= monthStart
     );
     
     // Count paid invoices this month
