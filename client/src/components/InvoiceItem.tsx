@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, CreditCard } from "lucide-react";
+import { FileText } from "lucide-react";
+import { PayInvoiceDialog } from "./PayInvoiceDialog";
 
 interface InvoiceItemProps {
   id: string;
@@ -11,7 +12,6 @@ interface InvoiceItemProps {
   dueDate: string;
   status: "Pending" | "Paid" | "Overdue" | "Approved";
   description?: string;
-  onPayWithCard?: () => void;
   onViewDetails?: () => void;
 }
 
@@ -23,7 +23,6 @@ export function InvoiceItem({
   dueDate,
   status,
   description,
-  onPayWithCard,
   onViewDetails,
 }: InvoiceItemProps) {
   const statusColors = {
@@ -70,15 +69,21 @@ export function InvoiceItem({
             View Details
           </Button>
           {status !== "Paid" && (
-            <Button 
-              size="sm" 
-              className="flex-1"
-              onClick={onPayWithCard}
-              data-testid={`button-pay-with-card-${id}`}
-            >
-              <CreditCard className="h-4 w-4 mr-2" />
-              Pay with Card
-            </Button>
+            <PayInvoiceDialog
+              invoice={{ id, invoiceNumber, vendorName, amount }}
+              trigger={
+                <Button 
+                  size="sm" 
+                  className="flex-1"
+                  data-testid={`button-pay-invoice-${id}`}
+                >
+                  Pay Invoice
+                </Button>
+              }
+              onPay={(method, details) => {
+                console.log(`Payment for ${id} via ${method}:`, details);
+              }}
+            />
           )}
         </div>
       </CardContent>

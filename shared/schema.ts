@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -25,6 +25,7 @@ export const invoices = pgTable("invoices", {
   dueDate: timestamp("due_date").notNull(),
   status: text("status").notNull(),
   description: text("description"),
+  paymentMethod: text("payment_method"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -48,6 +49,23 @@ export const cards = pgTable("cards", {
   requestedBy: text("requested_by").notNull(),
   approvedBy: text("approved_by"),
   cardNumber: text("card_number"),
+  
+  // Card Controls
+  currency: text("currency").notNull().default("USD"),
+  transactionLimit: decimal("transaction_limit", { precision: 10, scale: 2 }),
+  dailyLimit: decimal("daily_limit", { precision: 10, scale: 2 }),
+  monthlyLimit: decimal("monthly_limit", { precision: 10, scale: 2 }),
+  validFrom: timestamp("valid_from"),
+  validUntil: timestamp("valid_until"),
+  allowedMerchants: text("allowed_merchants").array(),
+  allowedMccCodes: text("allowed_mcc_codes").array(),
+  allowedCountries: text("allowed_countries").array(),
+  channelRestriction: text("channel_restriction"),
+  glAccountTemplate: text("gl_account_template"),
+  departmentTemplate: text("department_template"),
+  costCenterTemplate: text("cost_center_template"),
+  isOneTimeUse: boolean("is_one_time_use").default(false),
+  
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -60,6 +78,20 @@ export const insertCardSchema = createInsertSchema(cards).omit({
 
 export type InsertCard = z.infer<typeof insertCardSchema>;
 export type Card = typeof cards.$inferSelect;
+
+export const cardApprovals = pgTable("card_approvals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cardRequestId: varchar("card_request_id").notNull(),
+  approverName: text("approver_name").notNull(),
+  approverRole: text("approver_role").notNull(),
+  status: text("status").notNull(),
+  comments: text("comments"),
+  approvalLevel: integer("approval_level").notNull(),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type CardApproval = typeof cardApprovals.$inferSelect;
 
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

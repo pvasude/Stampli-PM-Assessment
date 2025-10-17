@@ -1,4 +1,4 @@
-import { CreditCard, FileText, BarChart3, Receipt, Home } from "lucide-react";
+import { CreditCard, FileText, BarChart3, Receipt, Home, CheckSquare } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +27,11 @@ const menuItems = [
     title: "Invoices",
     url: "/invoices",
     icon: FileText,
+  },
+  {
+    title: "Approvals",
+    url: "/approvals",
+    icon: CheckSquare,
   },
   {
     title: "Transactions",
