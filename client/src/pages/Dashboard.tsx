@@ -45,6 +45,8 @@ const mockCards = [
     status: "Active" as "Active" | "Locked" | "Suspended" | "Pending Approval",
     purpose: "Office Supplies - Q1 2024",
     cardNumber: "4532123456789012",
+    limitType: "one-time" as const,
+    transactionCount: "unlimited" as const,
   },
   {
     id: "2",
@@ -55,6 +57,8 @@ const mockCards = [
     status: "Active" as "Active" | "Locked" | "Suspended" | "Pending Approval",
     purpose: "Marketing Conference Travel",
     cardNumber: "5412345678901234",
+    limitType: "recurring" as const,
+    renewalFrequency: "month" as const,
   },
 ];
 
