@@ -22,7 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, Building, FileCheck, CheckCircle2, AlertCircle, Sparkles, DollarSign, X } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CreditCard, Building, FileCheck, CheckCircle2, AlertCircle, Sparkles, DollarSign, X, Zap, Mail, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Popover,
@@ -84,6 +85,8 @@ interface PayInvoiceDialogProps {
 export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogProps) {
   const [open, setOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const [cardPaymentMode, setCardPaymentMode] = useState<"pay-via-stampli" | "share-card">("pay-via-stampli");
+  const [createdCard, setCreatedCard] = useState<any>(null);
   const { toast } = useToast();
   
   // Mutation to create card when paying invoice
@@ -155,7 +158,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   const acceptsCards = invoice.acceptsCards !== false;
   const mcpAutomation = invoice.mcpAutomation || "available";
 
-  const handlePayWithCard = async () => {
+  const handlePayViaStampli = async () => {
     if (!cardholderName || !validUntil) {
       toast({
         title: "Missing information",
@@ -173,13 +176,13 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       const cardData = {
         cardholderName,
         purpose: `Payment for ${invoice.invoiceNumber}`,
-        spendLimit: limitAmount.toFixed(2), // Convert to string with 2 decimals
+        spendLimit: limitAmount.toFixed(2),
         currentSpend: 0,
         validFrom: new Date().toISOString(),
         validUntil,
-        status: "Active", // Auto-approve invoice payment cards
+        status: "Active",
         requestedBy: cardholderName,
-        approvedBy: "Auto-Approved", // Mark as auto-approved
+        approvedBy: "Auto-Approved",
         cardType,
         transactionCount: cardType === "one-time" ? transactionCount : null,
         renewalFrequency: cardType === "recurring" ? renewalFrequency : null,
@@ -195,6 +198,19 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       
       const newCard = await createCardMutation.mutateAsync(cardData);
       
+      // Immediately charge the card via simulate transaction
+      const transactionResponse = await apiRequest('POST', '/api/simulate/transaction', {
+        cardId: newCard.id,
+        amount: limitAmount.toFixed(2),
+        merchant: invoice.vendorName,
+      });
+      
+      const transaction = await transactionResponse.json();
+      
+      if (!transaction.approved) {
+        throw new Error("Transaction failed - insufficient funds or card limit exceeded");
+      }
+      
       // Update invoice status to Paid
       await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
         status: "Paid",
@@ -202,13 +218,79 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       });
       
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       
-      onPay?.("card", cardData);
+      onPay?.("card-stampli", { card: newCard, transaction });
       toast({
-        title: "Card created and invoice paid",
-        description: `Virtual card activated for ${invoice.invoiceNumber}`,
+        title: "Payment processed successfully",
+        description: `Invoice ${invoice.invoiceNumber} paid via Virtual Card`,
       });
       setOpen(false);
+    } catch (error) {
+      toast({
+        title: "Payment failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleShareCard = async () => {
+    if (!cardholderName || !validUntil) {
+      toast({
+        title: "Missing information",
+        description: "Please provide cardholder name and valid until date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Parse the card limit to a number and convert to string for the API
+      const limitAmount = parseFloat(cardLimit.replace(/[$,]/g, ''));
+      
+      // Create the card with auto-approved status for invoice payments
+      const cardData = {
+        cardholderName,
+        purpose: `Payment for ${invoice.invoiceNumber}`,
+        spendLimit: limitAmount.toFixed(2),
+        currentSpend: 0,
+        validFrom: new Date().toISOString(),
+        validUntil,
+        status: "Active",
+        requestedBy: cardholderName,
+        approvedBy: "Auto-Approved",
+        cardType,
+        transactionCount: cardType === "one-time" ? transactionCount : null,
+        renewalFrequency: cardType === "recurring" ? renewalFrequency : null,
+        currency,
+        channelRestriction,
+        allowedMerchants,
+        allowedCountries,
+        invoiceId: invoice.id,
+        glAccount: null,
+        department: null,
+        costCenter: null,
+      };
+      
+      const newCard = await createCardMutation.mutateAsync(cardData);
+      
+      // Update invoice status to Card Shared - Awaiting Payment
+      await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
+        status: "Card Shared - Awaiting Payment",
+        paymentMethod: `Virtual Card - ${newCard.last4 || "****"} (Shared)`,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      
+      // Store created card to show details
+      setCreatedCard(newCard);
+      
+      onPay?.("card-shared", { card: newCard });
+      toast({
+        title: "Card created successfully",
+        description: `Virtual card ready to share with ${invoice.vendorName}`,
+      });
     } catch (error) {
       toast({
         title: "Failed to create card",
@@ -268,8 +350,28 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
     }
   };
 
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied to clipboard",
+      description: `${label} copied successfully`,
+    });
+  };
+
+  const handleCloseDialog = () => {
+    setOpen(false);
+    setCreatedCard(null);
+    setCardPaymentMode("pay-via-stampli");
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      if (!newOpen) {
+        handleCloseDialog();
+      } else {
+        setOpen(newOpen);
+      }
+    }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button data-testid={`button-pay-invoice-${invoice.id}`}>
@@ -285,300 +387,434 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
           </DialogDescription>
         </DialogHeader>
         
-        <Tabs value={paymentMethod} onValueChange={setPaymentMethod} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="card" data-testid="tab-card">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Card
-            </TabsTrigger>
-            <TabsTrigger value="ach" data-testid="tab-ach">
-              <Building className="h-4 w-4 mr-2" />
-              ACH
-            </TabsTrigger>
-            <TabsTrigger value="check" data-testid="tab-check">
-              <FileCheck className="h-4 w-4 mr-2" />
-              Check
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="card" className="space-y-4 mt-4">
+        {/* Show card details if card was created via Share Card */}
+        {createdCard ? (
+          <div className="space-y-4">
             <Alert className="border-primary/20 bg-primary/5">
-              <DollarSign className="h-4 w-4" />
-              <AlertDescription className="flex items-center justify-between">
-                <span className="text-sm">Earn 1% cashback on this payment</span>
-                <Badge variant="outline" className="ml-2">
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  ${cashback}
-                </Badge>
+              <Mail className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Virtual Card Created Successfully</p>
+                  <p className="text-sm text-muted-foreground">
+                    Share these card details with {invoice.vendorName} to complete payment
+                  </p>
+                </div>
               </AlertDescription>
             </Alert>
 
-            <div className="p-3 border rounded-lg bg-accent/20">
-              <div className="flex items-center gap-2 mb-2">
-                <CreditCard className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Card Configuration</span>
+            <div className="space-y-3 p-4 border rounded-lg bg-card">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm text-muted-foreground">Card Number</Label>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => copyToClipboard(createdCard.cardNumber || "****", "Card number")}
+                  data-testid="button-copy-card-number"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={cardType === "one-time" ? "secondary" : "outline"} data-testid="badge-selected-card-type">
-                  {cardType === "one-time" ? "One-Time Card" : "Recurring Card"}
-                </Badge>
-                <span className="text-xs text-muted-foreground" data-testid="text-selected-frequency">
-                  {cardType === "one-time" 
-                    ? (transactionCount === "1" ? "Single Transaction" : 
-                       (invoice.paymentTerms?.includes("Installments") 
-                        ? `Multiple Transactions (${invoice.paymentTerms.split(" ")[0]} installments)`
-                        : "Unlimited Transactions"))
-                    : (renewalFrequency === "month" ? "Monthly Reset" : 
-                       renewalFrequency === "quarter" ? "Quarterly Reset" : "Yearly Reset")}
-                </span>
+              <p className="font-mono text-sm" data-testid="text-card-number">
+                {createdCard.cardNumber || "****"}
+              </p>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-muted-foreground">Expiry Date</Label>
+                  <p className="font-mono text-sm" data-testid="text-expiry-date">
+                    {createdCard.expiryDate || "**/**"}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">CVV</Label>
+                  <p className="font-mono text-sm" data-testid="text-cvv">
+                    {createdCard.cvv || "***"}
+                  </p>
+                </div>
               </div>
-              {invoice.paymentTerms && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Auto-configured for: {invoice.paymentTerms}
+
+              <div>
+                <Label className="text-sm text-muted-foreground">Cardholder Name</Label>
+                <p className="text-sm" data-testid="text-cardholder-name-display">
+                  {createdCard.cardholderName}
                 </p>
-              )}
+              </div>
+
+              <div>
+                <Label className="text-sm text-muted-foreground">Card Limit</Label>
+                <p className="text-sm font-medium" data-testid="text-card-limit-display">
+                  {currency} ${createdCard.spendLimit}
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {acceptsCards ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Vendor accepts cards</span>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="h-4 w-4" />
-                  <span>Vendor may not accept cards</span>
-                </>
-              )}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleCloseDialog}
+                className="flex-1"
+                data-testid="button-close-card-details"
+              >
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  const cardDetails = `Card Number: ${createdCard.cardNumber}\nExpiry: ${createdCard.expiryDate}\nCVV: ${createdCard.cvv}\nCardholder: ${createdCard.cardholderName}\nLimit: ${currency} $${createdCard.spendLimit}`;
+                  copyToClipboard(cardDetails, "All card details");
+                }}
+                className="flex-1"
+                data-testid="button-copy-all-details"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copy All Details
+              </Button>
             </div>
-
-            {mcpAutomation === "available" && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Sparkles className="h-4 w-4" />
-                <span><strong>MCP/Visa Automation:</strong> Payment will be automatically processed</span>
-              </div>
-            )}
-            {mcpAutomation === "manual" && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <AlertCircle className="h-4 w-4" />
-                <span><strong>Manual Sharing Required:</strong> You'll need to share card details</span>
-              </div>
-            )}
+          </div>
+        ) : (
+          <Tabs value={paymentMethod} onValueChange={setPaymentMethod} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="card" data-testid="tab-card">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Card
+              </TabsTrigger>
+              <TabsTrigger value="ach" data-testid="tab-ach">
+                <Building className="h-4 w-4 mr-2" />
+                ACH
+              </TabsTrigger>
+              <TabsTrigger value="check" data-testid="tab-check">
+                <FileCheck className="h-4 w-4 mr-2" />
+                Check
+              </TabsTrigger>
+            </TabsList>
             
-            <div className="space-y-2">
-              <Label htmlFor="cardholder">Cardholder Name *</Label>
-              <Input
-                id="cardholder"
-                value={cardholderName}
-                onChange={(e) => setCardholderName(e.target.value)}
-                placeholder="Enter cardholder name"
-                data-testid="input-cardholder-name"
-              />
-            </div>
+            <TabsContent value="card" className="space-y-4 mt-4">
+              <Alert className="border-primary/20 bg-primary/5">
+                <DollarSign className="h-4 w-4" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span className="text-sm">Earn 1% cashback on this payment</span>
+                  <Badge variant="outline" className="ml-2">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    ${cashback}
+                  </Badge>
+                </AlertDescription>
+              </Alert>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="amount">Card Limit</Label>
-                <Input
-                  id="amount"
-                  value={cardLimit}
-                  disabled
-                  className="bg-muted"
-                  data-testid="input-card-limit"
-                />
-                {invoice.totalAmount && invoice.totalAmount !== invoice.amount && (
-                  <p className="text-xs text-muted-foreground">Full invoice value (not current amount due)</p>
+              {/* Card Payment Mode Selection */}
+              <div className="space-y-3 p-4 border rounded-lg bg-card">
+                <Label className="text-sm font-medium">How would you like to pay?</Label>
+                <RadioGroup 
+                  value={cardPaymentMode} 
+                  onValueChange={(value: any) => setCardPaymentMode(value)}
+                  className="space-y-3"
+                >
+                  <div className="flex items-start space-x-3 p-3 border rounded-lg hover-elevate cursor-pointer" onClick={() => setCardPaymentMode("pay-via-stampli")}>
+                    <RadioGroupItem value="pay-via-stampli" id="pay-via-stampli" data-testid="radio-pay-via-stampli" />
+                    <div className="flex-1">
+                      <Label htmlFor="pay-via-stampli" className="cursor-pointer flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-primary" />
+                        <span className="font-medium">Pay via Stampli</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Immediate charge - Card will be created and charged instantly
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 p-3 border rounded-lg hover-elevate cursor-pointer" onClick={() => setCardPaymentMode("share-card")}>
+                    <RadioGroupItem value="share-card" id="share-card" data-testid="radio-share-card" />
+                    <div className="flex-1">
+                      <Label htmlFor="share-card" className="cursor-pointer flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-primary" />
+                        <span className="font-medium">Share card with vendor</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Create card and share details - No immediate charge
+                      </p>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div className="p-3 border rounded-lg bg-accent/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <CreditCard className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Card Configuration</span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant={cardType === "one-time" ? "secondary" : "outline"} data-testid="badge-selected-card-type">
+                    {cardType === "one-time" ? "One-Time Card" : "Recurring Card"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground" data-testid="text-selected-frequency">
+                    {cardType === "one-time" 
+                      ? (transactionCount === "1" ? "Single Transaction" : 
+                         (invoice.paymentTerms?.includes("Installments") 
+                          ? `Multiple Transactions (${invoice.paymentTerms.split(" ")[0]} installments)`
+                          : "Unlimited Transactions"))
+                      : (renewalFrequency === "month" ? "Monthly Reset" : 
+                         renewalFrequency === "quarter" ? "Quarterly Reset" : "Yearly Reset")}
+                  </span>
+                </div>
+                {invoice.paymentTerms && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Auto-configured for: {invoice.paymentTerms}
+                  </p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="currency">Currency</Label>
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger id="currency" data-testid="select-currency">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {acceptsCards ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Vendor accepts cards</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Vendor may not accept cards</span>
+                  </>
+                )}
+              </div>
+
+              {mcpAutomation === "available" && cardPaymentMode === "pay-via-stampli" && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Sparkles className="h-4 w-4" />
+                  <span><strong>MCP/Visa Automation:</strong> Payment will be automatically processed</span>
+                </div>
+              )}
+              {mcpAutomation === "manual" && cardPaymentMode === "share-card" && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <AlertCircle className="h-4 w-4" />
+                  <span><strong>Manual Sharing Required:</strong> You'll need to share card details</span>
+                </div>
+              )}
+              
               <div className="space-y-2">
-                <Label htmlFor="valid-until">Valid Until *</Label>
+                <Label htmlFor="cardholder">Cardholder Name *</Label>
                 <Input
-                  id="valid-until"
-                  type="date"
-                  value={validUntil}
-                  onChange={(e) => setValidUntil(e.target.value)}
-                  data-testid="input-valid-until"
+                  id="cardholder"
+                  value={cardholderName}
+                  onChange={(e) => setCardholderName(e.target.value)}
+                  placeholder="Enter cardholder name"
+                  data-testid="input-cardholder-name"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="channel">Channel</Label>
-                <Select value={channelRestriction} onValueChange={setChannelRestriction}>
-                  <SelectTrigger id="channel" data-testid="select-channel-restriction">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="online">Online Only</SelectItem>
-                    <SelectItem value="in-store">In-Store Only</SelectItem>
-                    <SelectItem value="both">Online & In-Store</SelectItem>
-                  </SelectContent>
-                </Select>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Card Limit</Label>
+                  <Input
+                    id="amount"
+                    value={cardLimit}
+                    disabled
+                    className="bg-muted"
+                    data-testid="input-card-limit"
+                  />
+                  {invoice.totalAmount && invoice.totalAmount !== invoice.amount && (
+                    <p className="text-xs text-muted-foreground">Full invoice value (not current amount due)</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger id="currency" data-testid="select-currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Allowed Merchants</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start h-auto min-h-9"
-                    data-testid="button-select-merchants"
-                  >
-                    {allowedMerchants.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {allowedMerchants.map((merchant) => (
-                          <Badge key={merchant} variant="secondary" className="text-xs">
-                            {merchant}
-                            <X
-                              className="ml-1 h-3 w-3 cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setAllowedMerchants(allowedMerchants.filter((m) => m !== merchant));
-                              }}
-                            />
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">Select merchants...</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[400px] p-0" align="start">
-                  <div className="max-h-[300px] overflow-y-auto p-2">
-                    {MERCHANT_OPTIONS.map((merchant) => (
-                      <div
-                        key={merchant}
-                        className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
-                        onClick={() => {
-                          if (allowedMerchants.includes(merchant)) {
-                            setAllowedMerchants(allowedMerchants.filter((m) => m !== merchant));
-                          } else {
-                            setAllowedMerchants([...allowedMerchants, merchant]);
-                          }
-                        }}
-                        data-testid={`checkbox-merchant-${merchant.toLowerCase().replace(/\s+/g, '-')}`}
-                      >
-                        <Checkbox checked={allowedMerchants.includes(merchant)} />
-                        <span className="text-sm">{merchant}</span>
-                      </div>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <p className="text-xs text-muted-foreground">
-                Invoice vendor ({invoice.vendorName}) pre-selected
-              </p>
-            </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="valid-until">Valid Until *</Label>
+                  <Input
+                    id="valid-until"
+                    type="date"
+                    value={validUntil}
+                    onChange={(e) => setValidUntil(e.target.value)}
+                    data-testid="input-valid-until"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="channel">Channel</Label>
+                  <Select value={channelRestriction} onValueChange={setChannelRestriction}>
+                    <SelectTrigger id="channel" data-testid="select-channel-restriction">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="online">Online Only</SelectItem>
+                      <SelectItem value="in-store">In-Store Only</SelectItem>
+                      <SelectItem value="both">Online & In-Store</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Allowed Countries</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start h-auto min-h-9"
-                    data-testid="button-select-countries"
-                  >
-                    {allowedCountries.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {allowedCountries.map((code) => {
-                          const country = COUNTRY_OPTIONS.find((c) => c.code === code);
-                          return (
-                            <Badge key={code} variant="secondary" className="text-xs">
-                              {code} - {country?.name}
+              <div className="space-y-2">
+                <Label>Allowed Merchants</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start h-auto min-h-9"
+                      data-testid="button-select-merchants"
+                    >
+                      {allowedMerchants.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {allowedMerchants.map((merchant) => (
+                            <Badge key={merchant} variant="secondary" className="text-xs">
+                              {merchant}
                               <X
                                 className="ml-1 h-3 w-3 cursor-pointer"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setAllowedCountries(allowedCountries.filter((c) => c !== code));
+                                  setAllowedMerchants(allowedMerchants.filter((m) => m !== merchant));
                                 }}
                               />
                             </Badge>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">Select countries...</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[400px] p-0" align="start">
-                  <div className="max-h-[300px] overflow-y-auto p-2">
-                    {COUNTRY_OPTIONS.map((country) => (
-                      <div
-                        key={country.code}
-                        className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
-                        onClick={() => {
-                          if (allowedCountries.includes(country.code)) {
-                            setAllowedCountries(allowedCountries.filter((c) => c !== country.code));
-                          } else {
-                            setAllowedCountries([...allowedCountries, country.code]);
-                          }
-                        }}
-                        data-testid={`checkbox-country-${country.code.toLowerCase()}`}
-                      >
-                        <Checkbox checked={allowedCountries.includes(country.code)} />
-                        <span className="text-sm">{country.code} - {country.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <p className="text-xs text-muted-foreground">
-                Select one or more countries where this card can be used
-              </p>
-            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Select merchants...</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0" align="start">
+                    <div className="max-h-[300px] overflow-y-auto p-2">
+                      {MERCHANT_OPTIONS.map((merchant) => (
+                        <div
+                          key={merchant}
+                          className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                          onClick={() => {
+                            if (allowedMerchants.includes(merchant)) {
+                              setAllowedMerchants(allowedMerchants.filter((m) => m !== merchant));
+                            } else {
+                              setAllowedMerchants([...allowedMerchants, merchant]);
+                            }
+                          }}
+                          data-testid={`checkbox-merchant-${merchant.toLowerCase().replace(/\s+/g, '-')}`}
+                        >
+                          <Checkbox checked={allowedMerchants.includes(merchant)} />
+                          <span className="text-sm">{merchant}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground">
+                  Invoice vendor ({invoice.vendorName}) pre-selected
+                </p>
+              </div>
 
-            <Button 
-              onClick={handlePayWithCard} 
-              className="w-full" 
-              disabled={!cardholderName.trim()}
-              data-testid="button-generate-card"
-            >
-              Generate Card & Pay
-            </Button>
-          </TabsContent>
-          
-          <TabsContent value="ach" className="space-y-4 mt-4">
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                ACH payment will be processed through your bank account
-              </p>
-            </div>
-            <Button onClick={handlePayWithACH} className="w-full" data-testid="button-pay-ach">
-              Process ACH Payment
-            </Button>
-          </TabsContent>
-          
-          <TabsContent value="check" className="space-y-4 mt-4">
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                A physical check will be issued and mailed to the vendor
-              </p>
-            </div>
-            <Button onClick={handlePayWithCheck} className="w-full" data-testid="button-issue-check">
-              Issue Check
-            </Button>
-          </TabsContent>
-        </Tabs>
+              <div className="space-y-2">
+                <Label>Allowed Countries</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start h-auto min-h-9"
+                      data-testid="button-select-countries"
+                    >
+                      {allowedCountries.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {allowedCountries.map((code) => {
+                            const country = COUNTRY_OPTIONS.find((c) => c.code === code);
+                            return (
+                              <Badge key={code} variant="secondary" className="text-xs">
+                                {code} - {country?.name}
+                                <X
+                                  className="ml-1 h-3 w-3 cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAllowedCountries(allowedCountries.filter((c) => c !== code));
+                                  }}
+                                />
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Select countries...</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0" align="start">
+                    <div className="max-h-[300px] overflow-y-auto p-2">
+                      {COUNTRY_OPTIONS.map((country) => (
+                        <div
+                          key={country.code}
+                          className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                          onClick={() => {
+                            if (allowedCountries.includes(country.code)) {
+                              setAllowedCountries(allowedCountries.filter((c) => c !== country.code));
+                            } else {
+                              setAllowedCountries([...allowedCountries, country.code]);
+                            }
+                          }}
+                          data-testid={`checkbox-country-${country.code.toLowerCase()}`}
+                        >
+                          <Checkbox checked={allowedCountries.includes(country.code)} />
+                          <span className="text-sm">{country.code} - {country.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground">
+                  Select one or more countries where this card can be used
+                </p>
+              </div>
+
+              {cardPaymentMode === "pay-via-stampli" ? (
+                <Button 
+                  onClick={handlePayViaStampli} 
+                  className="w-full" 
+                  disabled={!cardholderName.trim() || createCardMutation.isPending}
+                  data-testid="button-pay-via-stampli"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  {createCardMutation.isPending ? "Processing..." : "Pay via Stampli"}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleShareCard} 
+                  className="w-full" 
+                  disabled={!cardholderName.trim() || createCardMutation.isPending}
+                  data-testid="button-share-card"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  {createCardMutation.isPending ? "Creating Card..." : "Create & Share Card"}
+                </Button>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="ach" className="space-y-4 mt-4">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  ACH payment will be processed through your bank account
+                </p>
+              </div>
+              <Button onClick={handlePayWithACH} className="w-full" data-testid="button-pay-ach">
+                Process ACH Payment
+              </Button>
+            </TabsContent>
+            
+            <TabsContent value="check" className="space-y-4 mt-4">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  A physical check will be issued for this payment
+                </p>
+              </div>
+              <Button onClick={handlePayWithCheck} className="w-full" data-testid="button-pay-check">
+                Issue Check
+              </Button>
+            </TabsContent>
+          </Tabs>
+        )}
       </DialogContent>
     </Dialog>
   );

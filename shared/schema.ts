@@ -28,6 +28,7 @@ export const invoices = pgTable("invoices", {
   paymentMethod: text("payment_method"),
   approvedBy: text("approved_by"),
   approvedAt: timestamp("approved_at"),
+  lockedCardId: varchar("locked_card_id").references(() => cards.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
