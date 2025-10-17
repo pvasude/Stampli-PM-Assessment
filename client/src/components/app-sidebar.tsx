@@ -1,4 +1,4 @@
-import { CreditCard, FileText, BarChart3, Receipt, Home, CheckSquare } from "lucide-react";
+import { CreditCard, FileText, BarChart3, Receipt, Home, CheckSquare, Zap } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -42,6 +42,11 @@ const menuItems = [
     title: "Reports",
     url: "/reports",
     icon: BarChart3,
+  },
+  {
+    title: "Simulate",
+    url: "/simulate",
+    icon: Zap,
   },
 ];
 

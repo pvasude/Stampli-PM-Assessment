@@ -13,6 +13,7 @@ import Invoices from "@/pages/Invoices";
 import Approvals from "@/pages/Approvals";
 import Transactions from "@/pages/Transactions";
 import Reports from "@/pages/Reports";
+import Simulate from "@/pages/Simulate";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/approvals" component={Approvals} />
       <Route path="/transactions" component={Transactions} />
       <Route path="/reports" component={Reports} />
+      <Route path="/simulate" component={Simulate} />
       <Route component={NotFound} />
     </Switch>
   );
