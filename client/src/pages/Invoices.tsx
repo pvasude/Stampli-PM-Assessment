@@ -21,6 +21,7 @@ const mockInvoices = [
     status: "Pending" as const,
     description: "Office furniture and equipment for Q1",
     paymentTerms: "Net 30" as const,
+    paymentType: "card" as const,
   },
   {
     id: "inv-002",
@@ -31,6 +32,7 @@ const mockInvoices = [
     status: "Approved" as const,
     description: "Annual software licenses renewal",
     paymentTerms: "Net 60" as const,
+    paymentType: "ach" as const,
   },
   {
     id: "inv-003",
@@ -41,6 +43,7 @@ const mockInvoices = [
     status: "Pending" as const,
     description: "Cloud infrastructure hosting - March",
     paymentTerms: "Monthly Recurring" as const,
+    paymentType: "card" as const,
   },
   {
     id: "inv-004",
@@ -51,6 +54,7 @@ const mockInvoices = [
     status: "Overdue" as const,
     description: "Brand refresh and website redesign - 3 payments",
     paymentTerms: "3 Installments" as const,
+    paymentType: "card" as const,
   },
   {
     id: "inv-005",
@@ -61,6 +65,7 @@ const mockInvoices = [
     status: "Paid" as const,
     description: "Q4 legal consultation services",
     paymentTerms: "Net 30" as const,
+    paymentType: "check" as const,
   },
   {
     id: "inv-006",
@@ -71,6 +76,7 @@ const mockInvoices = [
     status: "Approved" as const,
     description: "Annual cloud infrastructure subscription",
     paymentTerms: "Yearly Recurring" as const,
+    paymentType: "card" as const,
   },
   {
     id: "inv-007",
@@ -81,12 +87,14 @@ const mockInvoices = [
     status: "Pending" as const,
     description: "Q1 office lease - 4 monthly payments",
     paymentTerms: "4 Installments" as const,
+    paymentType: "ach" as const,
   },
 ];
 
 export default function Invoices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState("all");
 
   const filteredInvoices = mockInvoices.filter((invoice) => {
     const matchesSearch =
@@ -94,7 +102,9 @@ export default function Invoices() {
       invoice.vendorName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || invoice.status.toLowerCase() === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
+    const matchesPaymentType =
+      paymentTypeFilter === "all" || invoice.paymentType === paymentTypeFilter;
+    return matchesSearch && matchesStatus && matchesPaymentType;
   });
 
   return (
@@ -117,6 +127,17 @@ export default function Invoices() {
             data-testid="input-search-invoices"
           />
         </div>
+        <Select value={paymentTypeFilter} onValueChange={setPaymentTypeFilter}>
+          <SelectTrigger className="w-[180px]" data-testid="select-payment-type">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Payment Types</SelectItem>
+            <SelectItem value="card">Card</SelectItem>
+            <SelectItem value="ach">ACH</SelectItem>
+            <SelectItem value="check">Check</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]" data-testid="select-invoice-status">
             <SelectValue />
