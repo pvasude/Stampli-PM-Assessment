@@ -48,9 +48,7 @@ export const cards = pgTable("cards", {
   invoiceId: varchar("invoice_id").references(() => invoices.id, { onDelete: 'set null' }),
   requestedBy: text("requested_by").notNull(),
   approvedBy: text("approved_by"),
-  cardNumber: text("card_number"),
   expiryDate: text("expiry_date"),
-  cvv: text("cvv"),
   last4: text("last_4"),
   
   // Card Controls
@@ -76,9 +74,7 @@ export const insertCardSchema = createInsertSchema(cards).omit({
   id: true,
   createdAt: true,
   currentSpend: true,
-  cardNumber: true,
   expiryDate: true,
-  cvv: true,
   last4: true,
 }).extend({
   validFrom: z.string().optional().nullable().or(z.date().optional()),

@@ -16,7 +16,6 @@ function formatCard(card: Card) {
     cardType: card.cardType as "Invoice Card" | "Expense Card",
     status: card.status as "Active" | "Locked" | "Suspended" | "Pending Approval",
     purpose: card.purpose ?? undefined,
-    cardNumber: card.cardNumber ?? undefined,
     invoiceId: card.invoiceId ?? undefined,
     spendLimit: `$${parseFloat(card.spendLimit).toLocaleString()}`,
     currentSpend: `$${parseFloat(card.currentSpend).toLocaleString()}`,
