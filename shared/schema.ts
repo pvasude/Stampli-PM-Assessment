@@ -68,6 +68,7 @@ export const cards = pgTable("cards", {
   departmentTemplate: text("department_template"),
   costCenterTemplate: text("cost_center_template"),
   isOneTimeUse: boolean("is_one_time_use").default(false),
+  lastResetDate: timestamp("last_reset_date").defaultNow(),
   
   createdAt: timestamp("created_at").defaultNow(),
 });

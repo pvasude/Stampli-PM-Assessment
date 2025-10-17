@@ -269,30 +269,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { cardId, amount, merchant } = req.body;
       
+      // Validate amount
+      const transactionAmount = parseFloat(amount);
+      if (isNaN(transactionAmount) || transactionAmount <= 0) {
+        return res.status(400).json({ error: "Invalid transaction amount" });
+      }
+      
       // Get the card to validate and get cardholder info
       const card = await storage.getCard(cardId);
       if (!card) {
         return res.status(404).json({ error: "Card not found" });
       }
 
-      // Create transaction with realistic data
-      const transaction = await storage.createTransaction({
+      // Execute transaction processing atomically with row-level locking
+      // All validation and updates happen inside the database transaction
+      const result = await storage.processTransaction({
         cardId,
-        amount: amount.toString(),
-        vendorName: merchant || `Test Merchant ${Math.floor(Math.random() * 1000)}`,
-        transactionDate: new Date(),
-        status: "Pending Coding",
+        amount: transactionAmount.toString(),
+        merchant: merchant || `Test Merchant ${Math.floor(Math.random() * 1000)}`,
         glAccount: card.glAccountTemplate || "6000",
         costCenter: card.costCenterTemplate || "CC-100",
       });
 
-      // Update card spend
-      const newSpend = parseFloat(card.currentSpend) + parseFloat(amount);
-      await storage.updateCard(cardId, {
-        currentSpend: newSpend.toString()
+      res.json({
+        ...result.transaction,
+        approved: true,
+        walletBalanceAfter: result.newWalletBalance,
+        cardSpendAfter: result.newCardSpend,
+        monthlyReset: result.monthlyReset
       });
-
-      res.json(transaction);
     } catch (error) {
       console.error("Simulate transaction error:", error);
       res.status(500).json({ error: "Failed to create transaction" });

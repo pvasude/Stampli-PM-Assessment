@@ -80,6 +80,20 @@ export interface IStorage {
   getPayment(id: string): Promise<Payment | undefined>;
   createPayment(payment: InsertPayment): Promise<Payment>;
   updatePayment(id: string, payment: Partial<InsertPayment>): Promise<Payment>;
+  
+  // Atomic transaction processing with row-level locking
+  processTransaction(params: {
+    cardId: string;
+    amount: string;
+    merchant: string;
+    glAccount: string;
+    costCenter: string;
+  }): Promise<{
+    transaction: Transaction;
+    newWalletBalance: string;
+    newCardSpend: string;
+    monthlyReset: boolean;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -319,6 +333,109 @@ export class DatabaseStorage implements IStorage {
       .where(eq(payments.id, id))
       .returning();
     return payment;
+  }
+
+  // Atomic transaction processing with row-level locking
+  async processTransaction(params: {
+    cardId: string;
+    amount: string;
+    merchant: string;
+    glAccount: string;
+    costCenter: string;
+  }): Promise<{
+    transaction: Transaction;
+    newWalletBalance: string;
+    newCardSpend: string;
+    monthlyReset: boolean;
+  }> {
+    return await db.transaction(async (tx) => {
+      const transactionAmount = parseFloat(params.amount);
+      
+      // 1. Lock and read card with FOR UPDATE
+      const [card] = await tx
+        .select()
+        .from(cards)
+        .where(eq(cards.id, params.cardId))
+        .for('update');
+      
+      if (!card) throw new Error("Card not found");
+
+      // 2. Lock and read wallet with FOR UPDATE
+      const [wallet] = await tx
+        .select()
+        .from(companyWallet)
+        .for('update');
+      
+      if (!wallet) throw new Error("Wallet not found");
+
+      // 3. Calculate baseSpend with fresh locked data (check for monthly reset)
+      let baseSpend = parseFloat(card.currentSpend);
+      let needsReset = false;
+      
+      if (!card.isOneTimeUse && card.lastResetDate) {
+        const now = new Date();
+        const lastReset = new Date(card.lastResetDate);
+        
+        if (now.getMonth() !== lastReset.getMonth() || now.getFullYear() !== lastReset.getFullYear()) {
+          baseSpend = 0;
+          needsReset = true;
+        }
+      }
+
+      // 4. Validate limits with fresh data
+      const cardLimit = parseFloat(card.spendLimit);
+      const projectedSpend = baseSpend + transactionAmount;
+      
+      if (projectedSpend > cardLimit) {
+        throw new Error(`Transaction declined: Exceeds card limit (${projectedSpend} > ${cardLimit})`);
+      }
+
+      const walletBalance = parseFloat(wallet.balance);
+      if (transactionAmount > walletBalance) {
+        throw new Error(`Transaction declined: Insufficient wallet balance (${transactionAmount} > ${walletBalance})`);
+      }
+
+      // 5. Create transaction record
+      const [transaction] = await tx
+        .insert(transactions)
+        .values({
+          cardId: params.cardId,
+          amount: params.amount,
+          vendorName: params.merchant,
+          transactionDate: new Date(),
+          status: "Pending Coding",
+          glAccount: params.glAccount,
+          costCenter: params.costCenter,
+        })
+        .returning();
+
+      // 6. Update wallet balance from fresh value
+      const newWalletBalance = (walletBalance - transactionAmount).toFixed(2);
+      await tx
+        .update(companyWallet)
+        .set({ balance: newWalletBalance, updatedAt: new Date() })
+        .where(eq(companyWallet.id, wallet.id));
+
+      // 7. Update card spend and reset date from fresh value
+      const newCardSpend = (baseSpend + transactionAmount).toFixed(2);
+      const cardUpdate: any = { currentSpend: newCardSpend };
+      
+      if (needsReset) {
+        cardUpdate.lastResetDate = new Date();
+      }
+      
+      await tx
+        .update(cards)
+        .set(cardUpdate)
+        .where(eq(cards.id, params.cardId));
+
+      return {
+        transaction,
+        newWalletBalance,
+        newCardSpend,
+        monthlyReset: needsReset,
+      };
+    });
   }
 }
 
