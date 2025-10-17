@@ -306,16 +306,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/simulate/invoice", async (req, res) => {
     try {
-      const { vendorName, amount, dueDate } = req.body;
+      const { vendorName, amount, description, status, approverName, payments } = req.body;
       
+      // Create the invoice
       const invoice = await storage.createInvoice({
         invoiceNumber: `INV-${Math.floor(Math.random() * 100000)}`,
         vendorName,
         amount: amount.toString(),
-        dueDate: new Date(dueDate),
-        status: "Pending",
-        description: `Simulated invoice for ${vendorName}`
+        dueDate: payments && payments.length > 0 ? new Date(payments[0].dueDate) : new Date(),
+        status: status || "Pending",
+        description: description || `Simulated invoice for ${vendorName}`,
+        paymentMethod: status === "Approved" ? "Pending Payment" : null,
+        approvedBy: status === "Approved" ? approverName : null,
+        approvedAt: status === "Approved" ? new Date() : null,
       });
+
+      // Create payment installments if provided
+      if (payments && payments.length > 0) {
+        for (const payment of payments) {
+          await storage.createPayment({
+            invoiceId: invoice.id,
+            amount: payment.amount.toString(),
+            dueDate: new Date(payment.dueDate),
+            status: status === "Approved" ? "Pending" : "Draft",
+            glAccount: payment.glAccount || null,
+            department: payment.department || null,
+            costCenter: payment.costCenter || null,
+          });
+        }
+      }
 
       res.json(invoice);
     } catch (error) {

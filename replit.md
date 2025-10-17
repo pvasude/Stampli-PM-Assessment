@@ -12,6 +12,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 17, 2025 - Wallet & Transaction Decline Logic (Complete):**
+- Implemented company-level wallet system with balance tracking
+- Added wallet UI on Cards page: displays balance, add funds dialog with validation
+- Built atomic transaction processing with row-level locking (SELECT ... FOR UPDATE)
+- Transaction decline logic: validates card limit AND wallet balance before processing
+- Recurring card monthly reset: tracks lastResetDate, resets spend on 1st of each month
+- Race condition prevention: all validation and updates happen inside database transaction
+- Enhanced API responses: returns wallet/card balances after transaction
+- Added lastResetDate field to cards table with automatic initialization
+
 **October 17, 2025 - UI/UX Cleanup (Feature Visibility):**
 - Moved Simulate feature from side navigation to Dashboard header button
 - Added "Testing Only" label and flask icon to Simulate button for clarity

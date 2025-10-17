@@ -26,6 +26,8 @@ export const invoices = pgTable("invoices", {
   status: text("status").notNull(),
   description: text("description"),
   paymentMethod: text("payment_method"),
+  approvedBy: text("approved_by"),
+  approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
