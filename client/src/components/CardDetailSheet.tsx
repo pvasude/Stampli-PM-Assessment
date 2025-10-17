@@ -40,7 +40,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { CardDetailsDialog } from "@/components/CardDetailsDialog";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface Transaction {
   id: string;
@@ -170,6 +171,29 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
     queryKey: ['/api/transactions'],
   });
 
+  // Mutation to create approval request for card changes
+  const createApprovalMutation = useMutation({
+    mutationFn: async (approvalData: any) => {
+      const response = await apiRequest('POST', '/api/card-approvals', approvalData);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/card-approvals'] });
+      toast({
+        title: "Changes submitted for approval",
+        description: "Card modifications will be applied once approved",
+      });
+      setEditMode(false);
+    },
+    onError: () => {
+      toast({
+        title: "Failed to submit changes",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Helper function to format transaction amount
   const formatAmount = (amount: string | number): string => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -281,11 +305,18 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
     };
     
     console.log("Submitting card changes for approval:", changes);
-    toast({
-      title: "Changes submitted for approval",
-      description: "Card modifications will be applied once approved",
-    });
-    setEditMode(false);
+    
+    // Create approval request with the proposed changes
+    const approvalData = {
+      cardRequestId: card.id,
+      approverName: "Lisa Chen",
+      approverRole: "Finance Manager",
+      status: "Pending",
+      approvalLevel: 1,
+      proposedChanges: JSON.stringify(changes),
+    };
+    
+    createApprovalMutation.mutate(approvalData);
   };
 
   const getStatusColor = (status: string) => {
