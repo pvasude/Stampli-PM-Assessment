@@ -115,14 +115,83 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
         <DialogHeader>
           <DialogTitle>Request Expense Card</DialogTitle>
           <DialogDescription>
-            Configure card controls and restrictions. Request will be sent for approval.
+            First, select the card type and frequency. This determines how the spend limit works.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="space-y-4 p-4 border rounded-lg bg-accent/20">
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Card Type & Frequency *</Label>
+            <RadioGroup value={cardType} onValueChange={(value: "one-time" | "recurring") => setCardType(value)}>
+              <div className="flex items-start space-x-3 p-3 border rounded-md hover-elevate active-elevate-2 bg-background" data-testid="radio-card-type-one-time">
+                <RadioGroupItem value="one-time" id="type-one-time" className="mt-0.5" />
+                <div className="flex-1">
+                  <Label htmlFor="type-one-time" className="font-medium cursor-pointer">
+                    One-Time Card
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Fixed limit that can be used once or multiple times until exhausted
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3 p-3 border rounded-md hover-elevate active-elevate-2 bg-background" data-testid="radio-card-type-recurring">
+                <RadioGroupItem value="recurring" id="type-recurring" className="mt-0.5" />
+                <div className="flex-1">
+                  <Label htmlFor="type-recurring" className="font-medium cursor-pointer">
+                    Recurring Card
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Spend limit resets automatically at your chosen frequency
+                  </p>
+                </div>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {cardType === "one-time" && (
+            <div className="space-y-2 pl-4 border-l-2 border-primary">
+              <Label htmlFor="transaction-count" className="font-medium">Transaction Limit *</Label>
+              <RadioGroup value={transactionCount} onValueChange={(value: "1" | "unlimited") => setTransactionCount(value)}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="1" id="one-transaction" data-testid="radio-one-transaction" />
+                  <Label htmlFor="one-transaction" className="font-normal cursor-pointer">
+                    Single transaction only
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="unlimited" id="unlimited-transactions" data-testid="radio-unlimited-transactions" />
+                  <Label htmlFor="unlimited-transactions" className="font-normal cursor-pointer">
+                    Unlimited transactions
+                  </Label>
+                </div>
+              </RadioGroup>
+              <p className="text-xs text-muted-foreground">
+                {transactionCount === "1" ? "Card deactivates after first use" : "Card active until spend limit reached"}
+              </p>
+            </div>
+          )}
+
+          {cardType === "recurring" && (
+            <div className="space-y-2 pl-4 border-l-2 border-primary">
+              <Label htmlFor="renewal-frequency" className="font-medium">Reset Frequency *</Label>
+              <Select value={renewalFrequency} onValueChange={(value: "month" | "quarter" | "year") => setRenewalFrequency(value)}>
+                <SelectTrigger id="renewal-frequency" data-testid="select-renewal-frequency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="month">Monthly - Limit resets every month</SelectItem>
+                  <SelectItem value="quarter">Quarterly - Limit resets every 3 months</SelectItem>
+                  <SelectItem value="year">Yearly - Limit resets every year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
         
         <Tabs defaultValue="basic" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="basic" data-testid="tab-basic">Basic</TabsTrigger>
-            <TabsTrigger value="limits" data-testid="tab-limits">Limits</TabsTrigger>
+            <TabsTrigger value="limits" data-testid="tab-limits">Duration</TabsTrigger>
             <TabsTrigger value="restrictions" data-testid="tab-restrictions">Restrictions</TabsTrigger>
             <TabsTrigger value="coding" data-testid="tab-coding">Coding</TabsTrigger>
           </TabsList>
@@ -176,64 +245,9 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
                 />
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="card-type">Card Type *</Label>
-              <Select value={cardType} onValueChange={(value: "one-time" | "recurring") => setCardType(value)}>
-                <SelectTrigger id="card-type" data-testid="select-card-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="one-time">One-Time Card</SelectItem>
-                  <SelectItem value="recurring">Recurring Card</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {cardType === "one-time" 
-                  ? "Card for single-use or limited transactions" 
-                  : "Card with recurring spend limits"}
-              </p>
-            </div>
           </TabsContent>
           
           <TabsContent value="limits" className="space-y-4 mt-4">
-            {cardType === "one-time" ? (
-              <div className="space-y-2">
-                <Label htmlFor="transaction-count">Transaction Count *</Label>
-                <RadioGroup value={transactionCount} onValueChange={(value: "1" | "unlimited") => setTransactionCount(value)}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="1" id="one-transaction" data-testid="radio-one-transaction" />
-                    <Label htmlFor="one-transaction" className="font-normal">
-                      1 transaction (card deactivates after single use)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="unlimited" id="unlimited-transactions" data-testid="radio-unlimited-transactions" />
-                    <Label htmlFor="unlimited-transactions" className="font-normal">
-                      Unlimited transactions (until spend limit reached)
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label htmlFor="renewal-frequency">Renewal Frequency *</Label>
-                <Select value={renewalFrequency} onValueChange={(value: "month" | "quarter" | "year") => setRenewalFrequency(value)}>
-                  <SelectTrigger id="renewal-frequency" data-testid="select-renewal-frequency">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="month">Monthly</SelectItem>
-                    <SelectItem value="quarter">Quarterly</SelectItem>
-                    <SelectItem value="year">Yearly</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Spend limit resets at the selected frequency
-                </p>
-              </div>
-            )}
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="valid-from">Valid From</Label>
