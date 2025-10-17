@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Dialog,
   DialogContent,
@@ -85,7 +87,29 @@ interface CardRequestDialogProps {
 export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
   const [open, setOpen] = useState(false);
   const [cardType, setCardType] = useState<"one-time" | "recurring">("one-time");
-  const { toast} = useToast();
+  const { toast } = useToast();
+  
+  // Mutation to create card request
+  const createCardMutation = useMutation({
+    mutationFn: async (cardData: any) => {
+      const response = await apiRequest('/api/cards', 'POST', cardData);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cards'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/card-approvals'] });
+    },
+  });
+
+  const createApprovalMutation = useMutation({
+    mutationFn: async (approvalData: any) => {
+      const response = await apiRequest('/api/card-approvals', 'POST', approvalData);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/card-approvals'] });
+    },
+  });
   
   // Basic fields
   const [cardholderName, setCardholderName] = useState("");
@@ -126,37 +150,73 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isFormValid()) {
       return;
     }
     
-    const requestData = {
-      cardholderName,
-      purpose,
-      currency,
-      spendLimit,
-      cardType,
-      transactionCount: cardType === "one-time" ? transactionCount : null,
-      renewalFrequency: cardType === "recurring" ? renewalFrequency : null,
-      validFrom,
-      validUntil,
-      allowedMerchants,
-      allowedMccCodes,
-      allowedCountries,
-      channelRestriction,
-      glAccountTemplate: glAccount,
-      departmentTemplate: department,
-      costCenterTemplate: costCenter,
-      status: "Pending Approval",
-    };
-    
-    console.log("Card request submitted (will go to approval):", requestData);
-    toast({
-      title: "Card request submitted",
-      description: `Request for ${cardholderName} sent for approval`,
-    });
-    setOpen(false);
+    try {
+      // Create card with "Pending Approval" status
+      const cardData = {
+        cardType: "Expense Card", // Will be stored in database
+        cardholderName,
+        spendLimit: parseFloat(spendLimit).toFixed(2),
+        currentSpend: "0.00",
+        status: "Pending Approval",
+        purpose,
+        requestedBy: "Current User", // In a real app, this would be the logged-in user
+        currency,
+        validFrom: validFrom || null,
+        validUntil: validUntil || null,
+        allowedMerchants: allowedMerchants.length > 0 ? allowedMerchants : null,
+        allowedMccCodes: allowedMccCodes.length > 0 ? allowedMccCodes : null,
+        allowedCountries: allowedCountries.length > 0 ? allowedCountries : null,
+        channelRestriction: channelRestriction !== "both" ? channelRestriction : null,
+        glAccountTemplate: glAccount,
+        departmentTemplate: department,
+        costCenterTemplate: costCenter,
+        isOneTimeUse: cardType === "one-time",
+      };
+
+      const createdCard = await createCardMutation.mutateAsync(cardData) as any;
+      
+      // Create approval record for Lisa Chen
+      const approvalData = {
+        cardRequestId: createdCard.id,
+        approverName: "Lisa Chen",
+        approverRole: "Finance Manager",
+        status: "Pending",
+        approvalLevel: 1,
+      };
+
+      await createApprovalMutation.mutateAsync(approvalData);
+      
+      toast({
+        title: "Card request submitted",
+        description: `Request for ${cardholderName} sent to Lisa Chen for approval`,
+      });
+      
+      // Reset form
+      setCardholderName("");
+      setPurpose("");
+      setSpendLimit("");
+      setValidFrom("");
+      setValidUntil("");
+      setAllowedMerchants([]);
+      setAllowedMccCodes([]);
+      setAllowedCountries([]);
+      setGlAccount("");
+      setDepartment("");
+      setCostCenter("");
+      
+      setOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit card request. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

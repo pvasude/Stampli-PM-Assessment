@@ -18,8 +18,14 @@ type CardStatus = "Active" | "Locked" | "Suspended" | "Pending Approval";
 
 // Helper to format card data for UI
 function formatCard(card: Card) {
+  // Map database cardType to UI cardType
+  const uiCardType = card.invoiceId ? "Invoice Card" as const : "Expense Card" as const;
+  
   return {
     ...card,
+    cardType: uiCardType,
+    status: card.status as "Active" | "Locked" | "Suspended" | "Pending Approval",
+    purpose: card.purpose || undefined,
     spendLimit: `$${parseFloat(card.spendLimit).toLocaleString()}`,
     currentSpend: `$${parseFloat(card.currentSpend).toLocaleString()}`,
     validUntil: card.validUntil ? new Date(card.validUntil).toISOString().split('T')[0] : undefined,
