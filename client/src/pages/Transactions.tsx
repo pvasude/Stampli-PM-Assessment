@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 // TODO: remove mock functionality
 const mockTransactions = [
@@ -84,6 +85,7 @@ export default function Transactions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const filteredTransactions = mockTransactions.filter((txn) => {
     const matchesSearch =
@@ -155,7 +157,13 @@ export default function Transactions() {
                   onUpdateGL={(value) => console.log(`GL updated for ${txn.id}:`, value)}
                   onUpdateDepartment={(value) => console.log(`Department updated for ${txn.id}:`, value)}
                   onUpdateCostCenter={(value) => console.log(`Cost center updated for ${txn.id}:`, value)}
-                  onSyncToERP={() => console.log(`Syncing ${txn.id} to ERP`)}
+                  onSyncToERP={() => {
+                    console.log(`Syncing ${txn.id} to ERP`);
+                    toast({
+                      title: "Synced to ERP",
+                      description: `Transaction ${txn.id} successfully synced to ERP`,
+                    });
+                  }}
                 />
               ))}
             </tbody>
