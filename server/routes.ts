@@ -1,13 +1,224 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { insertInvoiceSchema, insertCardSchema, insertTransactionSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  // Invoice routes
+  app.get("/api/invoices", async (req, res) => {
+    try {
+      const invoices = await storage.getInvoices();
+      res.json(invoices);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch invoices" });
+    }
+  });
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  app.get("/api/invoices/:id", async (req, res) => {
+    try {
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+      res.json(invoice);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch invoice" });
+    }
+  });
+
+  app.post("/api/invoices", async (req, res) => {
+    try {
+      const validated = insertInvoiceSchema.parse(req.body);
+      const invoice = await storage.createInvoice(validated);
+      res.json(invoice);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid invoice data" });
+    }
+  });
+
+  app.patch("/api/invoices/:id", async (req, res) => {
+    try {
+      const invoice = await storage.updateInvoice(req.params.id, req.body);
+      res.json(invoice);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update invoice" });
+    }
+  });
+
+  app.delete("/api/invoices/:id", async (req, res) => {
+    try {
+      await storage.deleteInvoice(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete invoice" });
+    }
+  });
+
+  // Card routes
+  app.get("/api/cards", async (req, res) => {
+    try {
+      const cards = await storage.getCards();
+      res.json(cards);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch cards" });
+    }
+  });
+
+  app.get("/api/cards/:id", async (req, res) => {
+    try {
+      const card = await storage.getCard(req.params.id);
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+      res.json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch card" });
+    }
+  });
+
+  app.post("/api/cards", async (req, res) => {
+    try {
+      const validated = insertCardSchema.parse(req.body);
+      const card = await storage.createCard(validated);
+      res.json(card);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid card data" });
+    }
+  });
+
+  app.patch("/api/cards/:id", async (req, res) => {
+    try {
+      const card = await storage.updateCard(req.params.id, req.body);
+      res.json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update card" });
+    }
+  });
+
+  app.delete("/api/cards/:id", async (req, res) => {
+    try {
+      await storage.deleteCard(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete card" });
+    }
+  });
+
+  // Card Approval routes
+  app.get("/api/card-approvals", async (req, res) => {
+    try {
+      const approvals = await storage.getCardApprovals();
+      res.json(approvals);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch card approvals" });
+    }
+  });
+
+  app.post("/api/card-approvals", async (req, res) => {
+    try {
+      const approval = await storage.createCardApproval(req.body);
+      res.json(approval);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid approval data" });
+    }
+  });
+
+  app.patch("/api/card-approvals/:id", async (req, res) => {
+    try {
+      const approval = await storage.updateCardApproval(req.params.id, req.body);
+      res.json(approval);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update approval" });
+    }
+  });
+
+  // Transaction routes
+  app.get("/api/transactions", async (req, res) => {
+    try {
+      const transactions = await storage.getTransactions();
+      res.json(transactions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch transactions" });
+    }
+  });
+
+  app.get("/api/transactions/:id", async (req, res) => {
+    try {
+      const transaction = await storage.getTransaction(req.params.id);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+      res.json(transaction);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch transaction" });
+    }
+  });
+
+  app.post("/api/transactions", async (req, res) => {
+    try {
+      const validated = insertTransactionSchema.parse(req.body);
+      const transaction = await storage.createTransaction(validated);
+      res.json(transaction);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid transaction data" });
+    }
+  });
+
+  app.patch("/api/transactions/:id", async (req, res) => {
+    try {
+      const transaction = await storage.updateTransaction(req.params.id, req.body);
+      res.json(transaction);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update transaction" });
+    }
+  });
+
+  app.delete("/api/transactions/:id", async (req, res) => {
+    try {
+      await storage.deleteTransaction(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete transaction" });
+    }
+  });
+
+  // GL Account routes
+  app.get("/api/gl-accounts", async (req, res) => {
+    try {
+      const accounts = await storage.getGLAccounts();
+      res.json(accounts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch GL accounts" });
+    }
+  });
+
+  app.post("/api/gl-accounts", async (req, res) => {
+    try {
+      const account = await storage.createGLAccount(req.body);
+      res.json(account);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid GL account data" });
+    }
+  });
+
+  // Cost Center routes
+  app.get("/api/cost-centers", async (req, res) => {
+    try {
+      const centers = await storage.getCostCenters();
+      res.json(centers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch cost centers" });
+    }
+  });
+
+  app.post("/api/cost-centers", async (req, res) => {
+    try {
+      const center = await storage.createCostCenter(req.body);
+      res.json(center);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid cost center data" });
+    }
+  });
 
   const httpServer = createServer(app);
 
