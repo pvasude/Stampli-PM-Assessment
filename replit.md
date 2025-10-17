@@ -12,6 +12,30 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 17, 2025 - Payment Locking & Invoice Status Derivation (Partial Implementation):**
+- **Payment Locking (UI Complete):**
+  - PayInvoiceDialog now sets lockedCardId when creating a card for payment
+  - UI displays locked card alert and disables payment method tabs when invoice is locked to a card
+  - Guidance shown: "To use a different payment method, suspend the card from the Cards page"
+  - Backend enforcement pending: routes still allow card deletion and payment method changes on locked invoices
+- **Invoice Status Derivation (Core Logic Complete):**
+  - Added deriveInvoiceStatus() method: calculates Partially Paid, Overdue, Paid based on payment data
+  - Logic prioritizes overdue status over all other statuses (including "Card Shared - Awaiting Payment")
+  - Added updateInvoiceStatus() method to persist derived status to database
+  - Created POST /api/invoices/:id/update-status endpoint for manual status updates
+  - PayInvoiceDialog calls status update after "Pay via Stampli" operations
+  - Automatic calling from payment create/update flows pending: currently requires manual trigger
+- **Status Derivation Logic:**
+  - Overdue: Any payment past due date and not paid (takes priority)
+  - Partially Paid: Total paid > $0 but < invoice amount
+  - Paid: Total paid >= invoice amount
+  - Card Shared - Awaiting Payment: Preserved until first payment made (unless overdue)
+  - Pending: Default state with no payments
+- **Known Limitations (Deferred Items):**
+  - Backend enforcement of payment locking not implemented (can still bypass via API)
+  - Automatic status derivation not integrated into all payment flows
+  - Card suspension validation for locked invoices not implemented
+
 **October 17, 2025 - Payment Flow & Declined Transaction Handling (Complete):**
 - Redesigned PayInvoiceDialog with two payment modes:
   - "Pay via Stampli": Creates card + immediately charges it, updates invoice to "Paid"
