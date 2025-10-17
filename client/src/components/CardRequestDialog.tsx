@@ -20,9 +20,45 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import { CreditCard } from "lucide-react";
+import { CreditCard, Check, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const MERCHANT_OPTIONS = [
+  "Amazon",
+  "Amazon Web Services (AWS)",
+  "Microsoft Azure",
+  "Google Cloud Platform",
+  "Office Depot",
+  "Staples",
+  "LinkedIn",
+  "Zoom",
+  "Slack",
+  "Delta Airlines",
+  "United Airlines",
+  "Hilton Hotels",
+  "Marriott Hotels",
+];
+
+const MCC_OPTIONS = [
+  { code: "5411", name: "Grocery Stores, Supermarkets" },
+  { code: "5734", name: "Computer Software Stores" },
+  { code: "5814", name: "Fast Food Restaurants" },
+  { code: "5812", name: "Eating Places, Restaurants" },
+  { code: "5999", name: "Miscellaneous Retail" },
+  { code: "7011", name: "Hotels, Motels, Resorts" },
+  { code: "7372", name: "Computer Programming, Data Processing" },
+  { code: "4511", name: "Airlines, Air Carriers" },
+  { code: "5943", name: "Stationery, Office Supplies" },
+  { code: "7311", name: "Advertising Services" },
+];
 
 interface CardRequestDialogProps {
   trigger?: React.ReactNode;
@@ -274,30 +310,118 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
           
           <TabsContent value="restrictions" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="merchants">Allowed Merchants</Label>
-              <Input
-                id="merchants"
-                value={allowedMerchants.join(', ')}
-                onChange={(e) => setAllowedMerchants(e.target.value.split(',').map((m: string) => m.trim()).filter(Boolean))}
-                placeholder="e.g., Amazon, Office Depot (comma-separated)"
-                data-testid="input-allowed-merchants"
-              />
+              <Label>Allowed Merchants</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto min-h-9"
+                    data-testid="button-select-merchants"
+                  >
+                    {allowedMerchants.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {allowedMerchants.map((merchant) => (
+                          <Badge key={merchant} variant="secondary" className="text-xs">
+                            {merchant}
+                            <X
+                              className="ml-1 h-3 w-3 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAllowedMerchants(allowedMerchants.filter((m) => m !== merchant));
+                              }}
+                            />
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Select merchants...</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <div className="max-h-[300px] overflow-y-auto p-2">
+                    {MERCHANT_OPTIONS.map((merchant) => (
+                      <div
+                        key={merchant}
+                        className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                        onClick={() => {
+                          if (allowedMerchants.includes(merchant)) {
+                            setAllowedMerchants(allowedMerchants.filter((m) => m !== merchant));
+                          } else {
+                            setAllowedMerchants([...allowedMerchants, merchant]);
+                          }
+                        }}
+                        data-testid={`checkbox-merchant-${merchant.toLowerCase().replace(/\s+/g, '-')}`}
+                      >
+                        <Checkbox checked={allowedMerchants.includes(merchant)} />
+                        <span className="text-sm">{merchant}</span>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
               <p className="text-xs text-muted-foreground">
-                Comma-separated list of merchant names
+                Select one or more merchants where this card can be used
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="mcc-codes">Allowed MCC Codes</Label>
-              <Input
-                id="mcc-codes"
-                value={allowedMccCodes.join(', ')}
-                onChange={(e) => setAllowedMccCodes(e.target.value.split(',').map((m: string) => m.trim()).filter(Boolean))}
-                placeholder="e.g., 5734, 5411 (comma-separated)"
-                data-testid="input-mcc-codes"
-              />
+              <Label>Allowed MCC Codes</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto min-h-9"
+                    data-testid="button-select-mcc"
+                  >
+                    {allowedMccCodes.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {allowedMccCodes.map((code) => {
+                          const mcc = MCC_OPTIONS.find((m) => m.code === code);
+                          return (
+                            <Badge key={code} variant="secondary" className="text-xs">
+                              {code} - {mcc?.name}
+                              <X
+                                className="ml-1 h-3 w-3 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAllowedMccCodes(allowedMccCodes.filter((c) => c !== code));
+                                }}
+                              />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Select MCC codes...</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[500px] p-0" align="start">
+                  <div className="max-h-[300px] overflow-y-auto p-2">
+                    {MCC_OPTIONS.map((mcc) => (
+                      <div
+                        key={mcc.code}
+                        className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                        onClick={() => {
+                          if (allowedMccCodes.includes(mcc.code)) {
+                            setAllowedMccCodes(allowedMccCodes.filter((c) => c !== mcc.code));
+                          } else {
+                            setAllowedMccCodes([...allowedMccCodes, mcc.code]);
+                          }
+                        }}
+                        data-testid={`checkbox-mcc-${mcc.code}`}
+                      >
+                        <Checkbox checked={allowedMccCodes.includes(mcc.code)} />
+                        <span className="text-sm font-mono">{mcc.code}</span>
+                        <span className="text-sm text-muted-foreground">- {mcc.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
               <p className="text-xs text-muted-foreground">
-                Comma-separated MCC codes
+                Select merchant category codes where this card can be used
               </p>
             </div>
 
