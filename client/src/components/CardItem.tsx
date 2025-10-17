@@ -18,6 +18,9 @@ interface CardItemProps {
   status: "Active" | "Locked" | "Suspended" | "Pending Approval";
   purpose?: string;
   cardNumber?: string;
+  limitType: "one-time" | "recurring";
+  transactionCount?: "1" | "unlimited";
+  renewalFrequency?: "month" | "quarter" | "year";
   onViewDetails?: () => void;
   onManageCard?: () => void;
 }
@@ -31,6 +34,9 @@ export function CardItem({
   status,
   purpose,
   cardNumber,
+  limitType,
+  transactionCount,
+  renewalFrequency,
   onViewDetails,
   onManageCard,
 }: CardItemProps) {
@@ -43,6 +49,19 @@ export function CardItem({
 
   const spendPercentage = (parseFloat(currentSpend.replace(/[$,]/g, '')) / parseFloat(spendLimit.replace(/[$,]/g, ''))) * 100;
 
+  const getFrequencyLabel = () => {
+    if (limitType === "one-time") {
+      return transactionCount === "1" ? "Single Transaction" : "Unlimited Transactions";
+    } else {
+      const frequencyMap = {
+        month: "Monthly Reset",
+        quarter: "Quarterly Reset",
+        year: "Yearly Reset",
+      };
+      return frequencyMap[renewalFrequency || "month"];
+    }
+  };
+
   return (
     <Card className="hover-elevate" data-testid={`card-item-${id}`}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
@@ -51,13 +70,20 @@ export function CardItem({
             <CreditCard className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold" data-testid={`text-cardholder-${id}`}>{cardholderName}</h3>
               <Badge className={statusColors[status]} data-testid={`badge-status-${id}`}>
                 {status}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">{cardType}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant={limitType === "one-time" ? "secondary" : "outline"} data-testid={`badge-card-type-${id}`}>
+                {limitType === "one-time" ? "One-Time" : "Recurring"}
+              </Badge>
+              <span className="text-xs text-muted-foreground" data-testid={`text-frequency-${id}`}>
+                {getFrequencyLabel()}
+              </span>
+            </div>
           </div>
         </div>
         <DropdownMenu>

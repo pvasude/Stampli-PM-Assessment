@@ -29,6 +29,8 @@ const mockCards = [
     validUntil: "2024-12-31",
     allowedCountries: ["US", "CA"],
     channelRestriction: "both",
+    limitType: "recurring" as const,
+    renewalFrequency: "month" as const,
   },
   {
     id: "2",
@@ -41,9 +43,9 @@ const mockCards = [
     cardNumber: "5412345678901234",
     currency: "USD",
     validUntil: "2024-11-30",
-    dailyLimit: "$500",
-    monthlyLimit: "$3,000",
     allowedMerchants: ["Uber", "Airbnb", "Airlines"],
+    limitType: "one-time" as const,
+    transactionCount: "unlimited" as const,
   },
   {
     id: "3",
@@ -56,6 +58,8 @@ const mockCards = [
     cardNumber: "4916123456789012",
     currency: "USD",
     validUntil: "2024-10-31",
+    limitType: "one-time" as const,
+    transactionCount: "1" as const,
   },
   {
     id: "4",
@@ -65,6 +69,8 @@ const mockCards = [
     currentSpend: "$0",
     status: "Pending Approval" as CardStatus,
     purpose: "Client Entertainment",
+    limitType: "recurring" as const,
+    renewalFrequency: "quarter" as const,
   },
   {
     id: "5",
@@ -76,6 +82,8 @@ const mockCards = [
     purpose: "Vendor Payments",
     cardNumber: "4539876543210987",
     currency: "USD",
+    limitType: "recurring" as const,
+    renewalFrequency: "year" as const,
   },
 ];
 
