@@ -39,6 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Transaction {
   id: string;
+  cardId: string;
   amount: string;
   vendorName: string;
   transactionDate: string;
@@ -76,8 +77,10 @@ interface CardDetailSheetProps {
 }
 
 const mockTransactions: Transaction[] = [
+  // Card 1 transactions
   {
     id: "1",
+    cardId: "1",
     amount: "$250.00",
     vendorName: "Amazon Business",
     transactionDate: "2024-10-15",
@@ -86,35 +89,42 @@ const mockTransactions: Transaction[] = [
   },
   {
     id: "2",
+    cardId: "1",
     amount: "$1,200.00",
     vendorName: "Dell Technologies",
     transactionDate: "2024-10-14",
     status: "Completed",
     memo: "Laptop purchase"
   },
+  // Card 3 transactions (exhausted spend limit)
   {
     id: "3",
-    amount: "$450.00",
-    vendorName: "Adobe",
+    cardId: "3",
+    amount: "$8,000.00",
+    vendorName: "Dell Business",
     transactionDate: "2024-10-13",
-    status: "Pending",
-    memo: "Software subscription"
+    status: "Completed",
+    memo: "IT equipment bulk purchase"
   },
+  // Card 5 transactions (single transaction consumed)
   {
     id: "4",
-    amount: "$800.00",
-    vendorName: "Unauthorized Merchant",
+    cardId: "5",
+    amount: "$1,500.00",
+    vendorName: "Office Furniture Co",
     transactionDate: "2024-10-12",
-    status: "Declined",
-    memo: "Outside allowed merchant list"
+    status: "Completed",
+    memo: "Desk and chairs"
   },
+  // Card 6 transactions (near auto-suspend)
   {
     id: "5",
-    amount: "$350.00",
-    vendorName: "Staples",
+    cardId: "6",
+    amount: "$2,000.00",
+    vendorName: "Microsoft",
     transactionDate: "2024-10-10",
     status: "Completed",
-    memo: "Office furniture"
+    memo: "Software licenses"
   },
 ];
 
@@ -134,8 +144,43 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
   
   const isInvoiceLinked = !!card.invoiceId;
 
-  const completedTransactions = mockTransactions.filter(t => t.status === "Completed" || t.status === "Pending");
-  const declinedTransactions = mockTransactions.filter(t => t.status === "Declined");
+  // Filter transactions for this specific card
+  const cardTransactions = mockTransactions.filter(t => t.cardId === card.id);
+  const completedTransactions = cardTransactions.filter(t => t.status === "Completed" || t.status === "Pending");
+  const declinedTransactions = cardTransactions.filter(t => t.status === "Declined");
+
+  // Check if one-time card should be auto-suspended
+  const shouldAutoSuspend = () => {
+    if (card.limitType !== "one-time") return false;
+    
+    const spendLimit = parseFloat(card.spendLimit.replace(/[^0-9.]/g, ''));
+    const currentSpend = parseFloat(card.currentSpend.replace(/[^0-9.]/g, ''));
+    
+    // Auto-suspend if spend limit is exhausted
+    if (currentSpend >= spendLimit) return true;
+    
+    // Auto-suspend if single transaction is consumed
+    if (card.transactionCount === "1" && completedTransactions.length > 0) return true;
+    
+    return false;
+  };
+
+  const autoSuspendReason = () => {
+    if (card.limitType !== "one-time") return null;
+    
+    const spendLimit = parseFloat(card.spendLimit.replace(/[^0-9.]/g, ''));
+    const currentSpend = parseFloat(card.currentSpend.replace(/[^0-9.]/g, ''));
+    
+    if (currentSpend >= spendLimit) {
+      return "Spend limit exhausted";
+    }
+    
+    if (card.transactionCount === "1" && completedTransactions.length > 0) {
+      return "Single transaction consumed";
+    }
+    
+    return null;
+  };
 
   const handleShare = () => {
     if (!shareEmail.trim()) {
@@ -316,6 +361,22 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
               <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
                 <p className="text-sm text-destructive">
                   This card has been permanently suspended and cannot be modified or shared.
+                </p>
+                {autoSuspendReason() && (
+                  <p className="text-xs text-destructive mt-1">
+                    Reason: {autoSuspendReason()}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {card.status === "Active" && shouldAutoSuspend() && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-md" data-testid="alert-auto-suspend">
+                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                  Auto-Suspend Triggered
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  {autoSuspendReason()} - This one-time card will be automatically suspended.
                 </p>
               </div>
             )}
