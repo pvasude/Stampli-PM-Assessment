@@ -338,6 +338,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Card not found" });
       }
 
+      // Check if card is locked or suspended - decline transaction
+      if (card.status === "Locked" || card.status === "Suspended") {
+        return res.status(400).json({
+          approved: false,
+          declined: true,
+          declineReason: card.status === "Locked" 
+            ? "Card is temporarily locked" 
+            : "Card is suspended",
+        });
+      }
+
       // Execute transaction processing atomically with row-level locking
       // All validation and updates happen inside the database transaction
       const result = await storage.processTransaction({
