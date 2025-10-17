@@ -5,87 +5,96 @@ import { CardRequestDialog } from "@/components/CardRequestDialog";
 import { Button } from "@/components/ui/button";
 import { CreditCard, FileText, TrendingUp, DollarSign } from "lucide-react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import type { Card, Invoice, CardApproval } from "@shared/schema";
+import { format } from "date-fns";
 
-// TODO: remove mock functionality
-const mockStats = [
-  {
-    title: "Total AP Spend",
-    value: "$156,850",
-    subtitle: "Cards: $24k | Invoices: $132k",
-    icon: DollarSign,
-    trend: { value: "8% from last month", isPositive: true },
-  },
-  {
-    title: "Pending Invoices",
-    value: "24",
-    subtitle: "Total value: $45,200",
-    icon: FileText,
-  },
-  {
-    title: "Active Cards",
-    value: "12",
-    subtitle: "8 invoice, 4 expense",
-    icon: CreditCard,
-  },
-  {
-    title: "Card Approvals",
-    value: "3",
-    subtitle: "Awaiting review",
-    icon: TrendingUp,
-  },
-];
+// Helper to format card data for UI
+function formatCard(card: Card) {
+  return {
+    ...card,
+    spendLimit: `$${parseFloat(card.spendLimit).toLocaleString()}`,
+    currentSpend: `$${parseFloat(card.currentSpend).toLocaleString()}`,
+    validUntil: card.validUntil ? new Date(card.validUntil).toISOString().split('T')[0] : undefined,
+    limitType: card.isOneTimeUse ? "one-time" as const : "recurring" as const,
+    transactionCount: card.isOneTimeUse ? "1" as const : "unlimited" as const,
+  };
+}
 
-const mockCards = [
-  {
-    id: "1",
-    cardType: "Invoice Card" as const,
-    cardholderName: "Sarah Johnson",
-    spendLimit: "$5,000",
-    currentSpend: "$3,250",
-    status: "Active" as "Active" | "Locked" | "Suspended" | "Pending Approval",
-    purpose: "Office Supplies - Q1 2024",
-    cardNumber: "4532123456789012",
-    limitType: "one-time" as const,
-    transactionCount: "unlimited" as const,
-  },
-  {
-    id: "2",
-    cardType: "Expense Card" as const,
-    cardholderName: "Michael Chen",
-    spendLimit: "$3,000",
-    currentSpend: "$1,800",
-    status: "Active" as "Active" | "Locked" | "Suspended" | "Pending Approval",
-    purpose: "Marketing Conference Travel",
-    cardNumber: "5412345678901234",
-    limitType: "recurring" as const,
-    renewalFrequency: "month" as const,
-  },
-];
-
-const mockInvoices = [
-  {
-    id: "inv-001",
-    invoiceNumber: "INV-2024-001",
-    vendorName: "Acme Office Supplies",
-    amount: "$2,450.00",
-    dueDate: "Mar 15, 2024",
-    status: "Pending" as const,
-    description: "Office furniture and equipment for Q1",
-  },
-  {
-    id: "inv-002",
-    invoiceNumber: "INV-2024-002",
-    vendorName: "TechCorp Software",
-    amount: "$5,200.00",
-    dueDate: "Mar 20, 2024",
-    status: "Approved" as const,
-    description: "Annual software licenses renewal",
-  },
-];
+// Helper to format invoice data for UI
+function formatInvoice(invoice: Invoice) {
+  return {
+    ...invoice,
+    amount: `$${parseFloat(invoice.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    dueDate: format(new Date(invoice.dueDate), 'MMM dd, yyyy'),
+    paymentType: invoice.paymentMethod || 'card' as const,
+    paymentTerms: 'Net 30' as const,
+  };
+}
 
 export default function Dashboard() {
   const [location, navigate] = useLocation();
   const isOnInvoicesPage = location === "/invoices";
+
+  const { data: cardsData, isLoading: cardsLoading } = useQuery<Card[]>({
+    queryKey: ['/api/cards'],
+  });
+
+  const { data: invoicesData, isLoading: invoicesLoading } = useQuery<Invoice[]>({
+    queryKey: ['/api/invoices'],
+  });
+
+  const { data: approvalsData } = useQuery<CardApproval[]>({
+    queryKey: ['/api/card-approvals'],
+  });
+
+  const cards = cardsData?.map(formatCard) ?? [];
+  const invoices = invoicesData?.map(formatInvoice) ?? [];
+  const approvals = approvalsData ?? [];
+
+  // Calculate stats from real data
+  const totalCardSpend = cardsData?.reduce((sum, card) => sum + parseFloat(card.currentSpend), 0) ?? 0;
+  const totalInvoiceValue = invoicesData?.reduce((sum, inv) => sum + parseFloat(inv.amount), 0) ?? 0;
+  const totalAPSpend = totalCardSpend + totalInvoiceValue;
+  
+  const pendingInvoices = invoicesData?.filter(inv => inv.status === "Pending") ?? [];
+  const pendingInvoiceValue = pendingInvoices.reduce((sum, inv) => sum + parseFloat(inv.amount), 0);
+  
+  const activeCards = cardsData?.filter(card => card.status === "Active") ?? [];
+  const invoiceCards = activeCards.filter(card => card.cardType === "Invoice Card").length;
+  const expenseCards = activeCards.filter(card => card.cardType === "Expense Card").length;
+  
+  const pendingApprovals = approvals.filter(a => a.status === "Pending").length;
+
+  const stats = [
+    {
+      title: "Total AP Spend",
+      value: `$${totalAPSpend.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+      subtitle: `Cards: $${totalCardSpend.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}k | Invoices: $${totalInvoiceValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}k`,
+      icon: DollarSign,
+    },
+    {
+      title: "Pending Invoices",
+      value: pendingInvoices.length.toString(),
+      subtitle: `Total value: $${pendingInvoiceValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+      icon: FileText,
+    },
+    {
+      title: "Active Cards",
+      value: activeCards.length.toString(),
+      subtitle: `${invoiceCards} invoice, ${expenseCards} expense`,
+      icon: CreditCard,
+    },
+    {
+      title: "Card Approvals",
+      value: pendingApprovals.toString(),
+      subtitle: "Awaiting review",
+      icon: TrendingUp,
+    },
+  ];
+
+  const recentCards = cards.slice(0, 2);
+  const pendingInvoicesFormatted = invoices.filter(inv => inv.status === "Pending").slice(0, 2);
 
   return (
     <div className="p-8 space-y-8">
@@ -99,60 +108,68 @@ export default function Dashboard() {
         <CardRequestDialog />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {mockStats.map((stat, index) => (
-          <StatsCard key={index} {...stat} />
-        ))}
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium">Recent Cards</h2>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate("/cards")}
-              data-testid="button-view-all-cards"
-            >
-              View All Cards
-            </Button>
-          </div>
-          <div className="space-y-4">
-            {mockCards.map((card) => (
-              <CardItem
-                key={card.id}
-                {...card}
-                onViewDetails={() => navigate("/cards")}
-              />
+      {cardsLoading || invoicesLoading ? (
+        <div className="text-center py-16">
+          <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {stats.map((stat, index) => (
+              <StatsCard key={index} {...stat} />
             ))}
           </div>
-        </div>
 
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium">Pending Invoices</h2>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate("/invoices")}
-              disabled={isOnInvoicesPage}
-              data-testid="button-view-invoices"
-            >
-              View Invoices
-            </Button>
+          <div className="grid lg:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium">Recent Cards</h2>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate("/cards")}
+                  data-testid="button-view-all-cards"
+                >
+                  View All Cards
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {recentCards.map((card) => (
+                  <CardItem
+                    key={card.id}
+                    {...card}
+                    onViewDetails={() => navigate("/cards")}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium">Pending Invoices</h2>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate("/invoices")}
+                  disabled={isOnInvoicesPage}
+                  data-testid="button-view-invoices"
+                >
+                  View Invoices
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {pendingInvoicesFormatted.map((invoice) => (
+                  <InvoiceItem
+                    key={invoice.id}
+                    {...invoice}
+                    onViewDetails={() => console.log(`View invoice: ${invoice.id}`)}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="space-y-4">
-            {mockInvoices.map((invoice) => (
-              <InvoiceItem
-                key={invoice.id}
-                {...invoice}
-                onViewDetails={() => console.log(`View invoice: ${invoice.id}`)}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

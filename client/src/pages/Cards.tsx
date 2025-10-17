@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CardItem } from "@/components/CardItem";
 import { CardRequestDialog } from "@/components/CardRequestDialog";
 import { CardDetailSheet } from "@/components/CardDetailSheet";
@@ -11,113 +12,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Card } from "@shared/schema";
 
 type CardStatus = "Active" | "Locked" | "Suspended" | "Pending Approval";
 
-// TODO: remove mock functionality
-const mockCards = [
-  {
-    id: "1",
-    cardType: "Invoice Card" as const,
-    cardholderName: "Sarah Johnson",
-    spendLimit: "$5,000",
-    currentSpend: "$3,250",
-    status: "Active" as CardStatus,
-    purpose: "Office Supplies - Q1 2024",
-    cardNumber: "4532123456789012",
-    currency: "USD",
-    validUntil: "2024-12-31",
-    allowedCountries: ["US", "CA"],
-    channelRestriction: "both",
-    limitType: "recurring" as const,
-    renewalFrequency: "month" as const,
-    invoiceId: "inv-001",
-    invoiceNumber: "INV-2024-001",
-  },
-  {
-    id: "2",
-    cardType: "Expense Card" as const,
-    cardholderName: "Michael Chen",
-    spendLimit: "$3,000",
-    currentSpend: "$1,800",
-    status: "Active" as CardStatus,
-    purpose: "Marketing Conference Travel",
-    cardNumber: "5412345678901234",
-    currency: "USD",
-    validUntil: "2024-11-30",
-    allowedMerchants: ["Uber", "Airbnb", "Airlines"],
-    limitType: "one-time" as const,
-    transactionCount: "unlimited" as const,
-  },
-  {
-    id: "3",
-    cardType: "Invoice Card" as const,
-    cardholderName: "Emily Rodriguez",
-    spendLimit: "$8,000",
-    currentSpend: "$8,000",
-    status: "Suspended" as CardStatus,
-    purpose: "IT Equipment Purchase - Spend Limit Exhausted",
-    cardNumber: "4916123456789012",
-    currency: "USD",
-    validUntil: "2024-10-31",
-    limitType: "one-time" as const,
-    transactionCount: "unlimited" as const,
-    invoiceId: "inv-003",
-    invoiceNumber: "INV-2024-003",
-  },
-  {
-    id: "4",
-    cardType: "Expense Card" as const,
-    cardholderName: "David Park",
-    spendLimit: "$2,500",
-    currentSpend: "$0",
-    status: "Pending Approval" as CardStatus,
-    purpose: "Client Entertainment",
-    limitType: "recurring" as const,
-    renewalFrequency: "quarter" as const,
-  },
-  {
-    id: "5",
-    cardType: "Expense Card" as const,
-    cardholderName: "Jessica Liu",
-    spendLimit: "$1,500",
-    currentSpend: "$1,500",
-    status: "Suspended" as CardStatus,
-    purpose: "Office Furniture - Single Transaction Used",
-    cardNumber: "4539876543210987",
-    currency: "USD",
-    limitType: "one-time" as const,
-    transactionCount: "1" as const,
-  },
-  {
-    id: "6",
-    cardType: "Expense Card" as const,
-    cardholderName: "Robert Martinez",
-    spendLimit: "$2,000",
-    currentSpend: "$2,000",
-    status: "Active" as CardStatus,
-    purpose: "Software Licenses - Near Auto-Suspend",
-    cardNumber: "5412345678909876",
-    currency: "USD",
-    validUntil: "2024-12-15",
-    limitType: "one-time" as const,
-    transactionCount: "unlimited" as const,
-  },
-];
-
-const mockInvoices = [
-  { id: '1', invoiceNumber: 'INV-2024-001', vendorName: 'Acme Office Supplies', amount: '$2,450' },
-  { id: '2', invoiceNumber: 'INV-2024-002', vendorName: 'TechCorp Software', amount: '$5,200' },
-];
+// Helper to format card data for UI
+function formatCard(card: Card) {
+  return {
+    ...card,
+    spendLimit: `$${parseFloat(card.spendLimit).toLocaleString()}`,
+    currentSpend: `$${parseFloat(card.currentSpend).toLocaleString()}`,
+    validUntil: card.validUntil ? new Date(card.validUntil).toISOString().split('T')[0] : undefined,
+    limitType: card.isOneTimeUse ? "one-time" as const : "recurring" as const,
+    transactionCount: card.isOneTimeUse ? "1" as const : "unlimited" as const,
+  };
+}
 
 export default function Cards() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [selectedCard, setSelectedCard] = useState<typeof mockCards[0] | null>(null);
+  const [selectedCard, setSelectedCard] = useState<ReturnType<typeof formatCard> | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 
-  const filteredCards = mockCards.filter((card) => {
+  const { data: cardsData, isLoading } = useQuery<Card[]>({
+    queryKey: ['/api/cards'],
+  });
+
+  const { data: invoicesData } = useQuery({
+    queryKey: ['/api/invoices'],
+  });
+
+  const cards = cardsData?.map(formatCard) ?? [];
+  const invoices = invoicesData ?? [];
+
+  const filteredCards = cards.filter((card) => {
     const matchesSearch =
       card.cardholderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       card.purpose?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -128,7 +57,7 @@ export default function Cards() {
     return matchesSearch && matchesStatus && matchesType;
   });
   
-  const handleViewDetails = (card: typeof mockCards[0]) => {
+  const handleViewDetails = (card: ReturnType<typeof formatCard>) => {
     setSelectedCard(card);
     setDetailSheetOpen(true);
   };
@@ -180,20 +109,28 @@ export default function Cards() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCards.map((card) => (
-          <CardItem
-            key={card.id}
-            {...card}
-            onViewDetails={() => handleViewDetails(card)}
-          />
-        ))}
-      </div>
-
-      {filteredCards.length === 0 && (
+      {isLoading ? (
         <div className="text-center py-16">
-          <p className="text-sm text-muted-foreground">No cards found matching your criteria</p>
+          <p className="text-sm text-muted-foreground">Loading cards...</p>
         </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCards.map((card) => (
+              <CardItem
+                key={card.id}
+                {...card}
+                onViewDetails={() => handleViewDetails(card)}
+              />
+            ))}
+          </div>
+
+          {filteredCards.length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-sm text-muted-foreground">No cards found matching your criteria</p>
+            </div>
+          )}
+        </>
       )}
 
       {selectedCard && (

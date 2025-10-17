@@ -45,7 +45,7 @@ export const cards = pgTable("cards", {
   currentSpend: decimal("current_spend", { precision: 10, scale: 2 }).notNull().default("0"),
   status: text("status").notNull(),
   purpose: text("purpose"),
-  invoiceId: varchar("invoice_id"),
+  invoiceId: varchar("invoice_id").references(() => invoices.id, { onDelete: 'set null' }),
   requestedBy: text("requested_by").notNull(),
   approvedBy: text("approved_by"),
   cardNumber: text("card_number"),
@@ -81,7 +81,7 @@ export type Card = typeof cards.$inferSelect;
 
 export const cardApprovals = pgTable("card_approvals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  cardRequestId: varchar("card_request_id").notNull(),
+  cardRequestId: varchar("card_request_id").notNull().references(() => cards.id, { onDelete: 'cascade' }),
   approverName: text("approver_name").notNull(),
   approverRole: text("approver_role").notNull(),
   status: text("status").notNull(),
@@ -91,11 +91,17 @@ export const cardApprovals = pgTable("card_approvals", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const insertCardApprovalSchema = createInsertSchema(cardApprovals).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCardApproval = z.infer<typeof insertCardApprovalSchema>;
 export type CardApproval = typeof cardApprovals.$inferSelect;
 
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  cardId: varchar("card_id").notNull(),
+  cardId: varchar("card_id").notNull().references(() => cards.id, { onDelete: 'cascade' }),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   vendorName: text("vendor_name").notNull(),
   transactionDate: timestamp("transaction_date").notNull(),
@@ -104,7 +110,7 @@ export const transactions = pgTable("transactions", {
   costCenter: text("cost_center"),
   memo: text("memo"),
   receiptUrl: text("receipt_url"),
-  invoiceId: varchar("invoice_id"),
+  invoiceId: varchar("invoice_id").references(() => invoices.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

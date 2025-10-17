@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertInvoiceSchema, insertCardSchema, insertTransactionSchema } from "@shared/schema";
+import { insertInvoiceSchema, insertCardSchema, insertTransactionSchema, insertCardApprovalSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Invoice routes
@@ -116,7 +116,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/card-approvals", async (req, res) => {
     try {
-      const approval = await storage.createCardApproval(req.body);
+      const validated = insertCardApprovalSchema.parse(req.body);
+      const approval = await storage.createCardApproval(validated);
       res.json(approval);
     } catch (error) {
       res.status(400).json({ error: "Invalid approval data" });
@@ -125,7 +126,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/card-approvals/:id", async (req, res) => {
     try {
-      const approval = await storage.updateCardApproval(req.params.id, req.body);
+      const validated = insertCardApprovalSchema.partial().parse(req.body);
+      const approval = await storage.updateCardApproval(req.params.id, validated);
       res.json(approval);
     } catch (error) {
       res.status(500).json({ error: "Failed to update approval" });

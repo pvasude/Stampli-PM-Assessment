@@ -10,6 +10,17 @@ The platform is built as a modern, enterprise-grade finance application drawing 
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+**October 17, 2025 - Database Integration Complete:**
+- Migrated from in-memory mock data to PostgreSQL with Drizzle ORM
+- Implemented complete DatabaseStorage class with CRUD operations
+- Added RESTful API routes for all entities (cards, invoices, transactions, approvals)
+- Updated all frontend pages to use real data from API
+- Added foreign key constraints for data integrity (cards ↔ invoices, transactions ↔ cards/invoices, approvals ↔ cards)
+- Seeded database with initial test data
+- Application now persists all data to PostgreSQL database
+
 ## System Architecture
 
 ### Frontend Architecture

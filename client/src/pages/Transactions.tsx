@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { TransactionRow } from "@/components/TransactionRow";
 import { ReceiptUploadDialog } from "@/components/ReceiptUploadDialog";
 import { Input } from "@/components/ui/input";
@@ -13,123 +14,31 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import type { Transaction, Card } from "@shared/schema";
+import { format } from "date-fns";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
-// TODO: remove mock functionality
-const mockTransactions = [
-  {
-    id: "txn-001",
+// Helper to format transaction data for UI
+function formatTransaction(txn: Transaction, cards: Card[]) {
+  const card = cards.find(c => c.id === txn.cardId);
+  
+  return {
+    id: txn.id,
     type: "card" as const,
-    date: "Mar 10, 2024",
-    vendor: "Amazon Web Services",
-    amount: "$850.00",
-    cashback: "$8.50",
-    cardholder: "Sarah Johnson",
-    status: "Pending Receipt" as const,
-    glAccount: undefined,
-    department: undefined,
-    costCenter: undefined,
-    hasReceipt: false,
-  },
-  {
-    id: "txn-002",
-    type: "card" as const,
-    date: "Mar 11, 2024",
-    vendor: "Acme Office Supplies",
-    amount: "$1,245.50",
-    cashback: "$12.46",
-    cardholder: "Michael Chen",
-    status: "Pending Coding" as const,
-    glAccount: undefined,
-    department: undefined,
-    costCenter: undefined,
-    hasReceipt: true,
-  },
-  {
-    id: "pay-001",
-    type: "ap" as const,
-    date: "Mar 11, 2024",
-    vendor: "Office Depot",
-    amount: "$3,450.00",
-    paymentMethod: "ACH" as const,
-    invoiceNumber: "INV-2024-001",
-    status: "Ready to Sync" as const,
-    glAccount: "5100",
-    department: "Operations",
-    costCenter: "CC-003",
-    hasReceipt: true,
-  },
-  {
-    id: "txn-003",
-    type: "card" as const,
-    date: "Mar 12, 2024",
-    vendor: "LinkedIn Ads",
-    amount: "$2,500.00",
-    cashback: "$25.00",
-    cardholder: "Emily Rodriguez",
-    status: "Ready to Sync" as const,
-    glAccount: "7000",
-    department: "Sales",
-    costCenter: "CC-001",
-    hasReceipt: true,
-  },
-  {
-    id: "pay-002",
-    type: "ap" as const,
-    date: "Mar 12, 2024",
-    vendor: "Verizon Business",
-    amount: "$1,890.00",
-    paymentMethod: "Check" as const,
-    invoiceNumber: "INV-2024-008",
-    status: "Pending Coding" as const,
-    glAccount: undefined,
-    department: undefined,
-    costCenter: undefined,
-    hasReceipt: true,
-  },
-  {
-    id: "txn-004",
-    type: "card" as const,
-    date: "Mar 13, 2024",
-    vendor: "Delta Airlines",
-    amount: "$680.00",
-    cashback: "$6.80",
-    cardholder: "David Park",
-    status: "Pending Receipt" as const,
-    glAccount: undefined,
-    department: undefined,
-    costCenter: undefined,
-    hasReceipt: false,
-  },
-  {
-    id: "txn-005",
-    type: "card" as const,
-    date: "Mar 14, 2024",
-    vendor: "Zoom Video",
-    amount: "$199.00",
-    cashback: "$1.99",
-    cardholder: "Sarah Johnson",
-    status: "Ready to Sync" as const,
-    glAccount: "6200",
-    department: "Engineering",
-    costCenter: "CC-002",
-    hasReceipt: true,
-  },
-  {
-    id: "pay-003",
-    type: "ap" as const,
-    date: "Mar 14, 2024",
-    vendor: "Acme Consulting",
-    amount: "$12,500.00",
-    paymentMethod: "Card" as const,
-    invoiceNumber: "INV-2024-015",
-    cashback: "$125.00",
-    status: "Ready to Sync" as const,
-    glAccount: "8500",
-    department: "Professional Services",
-    costCenter: "CC-004",
-    hasReceipt: true,
-  },
-];
+    date: format(new Date(txn.transactionDate), 'MMM dd, yyyy'),
+    vendor: txn.vendorName,
+    amount: `$${parseFloat(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    cashback: `$${(parseFloat(txn.amount) * 0.01).toFixed(2)}`, // 1% cashback
+    cardholder: card?.cardholderName || "Unknown",
+    status: txn.status as "Pending Receipt" | "Pending Coding" | "Ready to Sync" | "Synced",
+    glAccount: txn.glAccount || undefined,
+    department: txn.costCenter || undefined,
+    costCenter: txn.costCenter || undefined,
+    hasReceipt: !!txn.receiptUrl,
+    invoiceNumber: txn.invoiceId || undefined,
+    paymentMethod: undefined,
+  };
+}
 
 export default function Transactions() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -140,8 +49,19 @@ export default function Transactions() {
   const [syncedTransactionIds, setSyncedTransactionIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
+  const { data: transactionsData, isLoading } = useQuery<Transaction[]>({
+    queryKey: ['/api/transactions'],
+  });
+
+  const { data: cardsData } = useQuery<Card[]>({
+    queryKey: ['/api/cards'],
+  });
+
+  const cards = cardsData ?? [];
+  const transactions = transactionsData?.map(txn => formatTransaction(txn, cards)) ?? [];
+
   // Update transaction status based on whether it's been synced
-  const transactionsWithStatus = mockTransactions.map((txn) => ({
+  const transactionsWithStatus = transactions.map((txn) => ({
     ...txn,
     status: syncedTransactionIds.has(txn.id) ? ("Synced" as const) : txn.status,
   }));
@@ -260,46 +180,54 @@ export default function Transactions() {
         </Select>
       </div>
 
-      <div className="rounded-lg overflow-hidden bg-card">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b bg-muted/30">
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Type</th>
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Date</th>
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Vendor</th>
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Amount</th>
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Cashback</th>
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Info</th>
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Status</th>
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">GL Account</th>
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Department</th>
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Cost Center</th>
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Receipt</th>
-                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTransactions.map((txn) => (
-                <TransactionRow
-                  key={txn.id}
-                  {...txn}
-                  onUploadReceipt={() => setSelectedTransaction(txn.id)}
-                  onUpdateGL={(value) => console.log(`GL updated for ${txn.id}:`, value)}
-                  onUpdateDepartment={(value) => console.log(`Department updated for ${txn.id}:`, value)}
-                  onUpdateCostCenter={(value) => console.log(`Cost center updated for ${txn.id}:`, value)}
-                  onSyncToERP={() => handleSyncSingle(txn.id)}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {filteredTransactions.length === 0 && (
+      {isLoading ? (
         <div className="text-center py-16">
-          <p className="text-sm text-muted-foreground">No transactions found matching your criteria</p>
+          <p className="text-sm text-muted-foreground">Loading transactions...</p>
         </div>
+      ) : (
+        <>
+          <div className="rounded-lg overflow-hidden bg-card">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-muted/30">
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Type</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Date</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Vendor</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Amount</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Cashback</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Info</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Status</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">GL Account</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Department</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Cost Center</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Receipt</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.map((txn) => (
+                    <TransactionRow
+                      key={txn.id}
+                      {...txn}
+                      onUploadReceipt={() => setSelectedTransaction(txn.id)}
+                      onUpdateGL={(value) => console.log(`GL updated for ${txn.id}:`, value)}
+                      onUpdateDepartment={(value) => console.log(`Department updated for ${txn.id}:`, value)}
+                      onUpdateCostCenter={(value) => console.log(`Cost center updated for ${txn.id}:`, value)}
+                      onSyncToERP={() => handleSyncSingle(txn.id)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {filteredTransactions.length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-sm text-muted-foreground">No transactions found matching your criteria</p>
+            </div>
+          )}
+        </>
       )}
         </TabsContent>
 

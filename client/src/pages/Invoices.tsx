@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { InvoiceItem } from "@/components/InvoiceItem";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
@@ -9,94 +10,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Invoice } from "@shared/schema";
+import { format } from "date-fns";
 
-// TODO: remove mock functionality
-const mockInvoices = [
-  {
-    id: "inv-001",
-    invoiceNumber: "INV-2024-001",
-    vendorName: "Acme Office Supplies",
-    amount: "$2,450.00",
-    dueDate: "Mar 15, 2024",
-    status: "Pending" as const,
-    description: "Office furniture and equipment for Q1",
-    paymentTerms: "Net 30" as const,
-    paymentType: "card" as const,
-  },
-  {
-    id: "inv-002",
-    invoiceNumber: "INV-2024-002",
-    vendorName: "TechCorp Software",
-    amount: "$5,200.00",
-    dueDate: "Mar 20, 2024",
-    status: "Approved" as const,
-    description: "Annual software licenses renewal",
-    paymentTerms: "Net 60" as const,
-    paymentType: "ach" as const,
-  },
-  {
-    id: "inv-003",
-    invoiceNumber: "INV-2024-003",
-    vendorName: "CloudHost Services",
-    amount: "$1,850.00",
-    dueDate: "Mar 25, 2024",
-    status: "Pending" as const,
-    description: "Cloud infrastructure hosting - March",
-    paymentTerms: "Monthly Recurring" as const,
-    paymentType: "card" as const,
-  },
-  {
-    id: "inv-004",
-    invoiceNumber: "INV-2024-004",
-    vendorName: "Design Studio Pro",
-    amount: "$3,500.00",
-    dueDate: "Mar 10, 2024",
-    status: "Overdue" as const,
-    description: "Brand refresh and website redesign - 3 payments",
-    paymentTerms: "3 Installments" as const,
-    paymentType: "card" as const,
-  },
-  {
-    id: "inv-005",
-    invoiceNumber: "INV-2024-005",
-    vendorName: "Legal Associates LLC",
-    amount: "$4,200.00",
-    dueDate: "Feb 28, 2024",
-    status: "Paid" as const,
-    description: "Q4 legal consultation services",
-    paymentTerms: "Net 30" as const,
-    paymentType: "check" as const,
-  },
-  {
-    id: "inv-006",
-    invoiceNumber: "INV-2024-006",
-    vendorName: "AWS Cloud Services",
-    amount: "$12,500.00",
-    dueDate: "Apr 1, 2024",
-    status: "Approved" as const,
-    description: "Annual cloud infrastructure subscription",
-    paymentTerms: "Yearly Recurring" as const,
-    paymentType: "card" as const,
-  },
-  {
-    id: "inv-007",
-    invoiceNumber: "INV-2024-007",
-    vendorName: "Office Lease Corp",
-    amount: "$8,000.00",
-    dueDate: "Apr 5, 2024",
-    status: "Pending" as const,
-    description: "Q1 office lease - 4 monthly payments",
-    paymentTerms: "4 Installments" as const,
-    paymentType: "ach" as const,
-  },
-];
+// Helper to format invoice data for UI
+function formatInvoice(invoice: Invoice) {
+  return {
+    ...invoice,
+    amount: `$${parseFloat(invoice.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    dueDate: format(new Date(invoice.dueDate), 'MMM dd, yyyy'),
+    paymentType: invoice.paymentMethod || 'card' as const,
+    paymentTerms: 'Net 30' as const, // Default, would come from invoice if available
+  };
+}
 
 export default function Invoices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState("all");
 
-  const filteredInvoices = mockInvoices.filter((invoice) => {
+  const { data: invoicesData, isLoading } = useQuery<Invoice[]>({
+    queryKey: ['/api/invoices'],
+  });
+
+  const invoices = invoicesData?.map(formatInvoice) ?? [];
+
+  const filteredInvoices = invoices.filter((invoice) => {
     const matchesSearch =
       invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       invoice.vendorName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -152,20 +91,28 @@ export default function Invoices() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredInvoices.map((invoice) => (
-          <InvoiceItem
-            key={invoice.id}
-            {...invoice}
-            onViewDetails={() => console.log(`View invoice: ${invoice.id}`)}
-          />
-        ))}
-      </div>
-
-      {filteredInvoices.length === 0 && (
+      {isLoading ? (
         <div className="text-center py-16">
-          <p className="text-sm text-muted-foreground">No invoices found matching your criteria</p>
+          <p className="text-sm text-muted-foreground">Loading invoices...</p>
         </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredInvoices.map((invoice) => (
+              <InvoiceItem
+                key={invoice.id}
+                {...invoice}
+                onViewDetails={() => console.log(`View invoice: ${invoice.id}`)}
+              />
+            ))}
+          </div>
+
+          {filteredInvoices.length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-sm text-muted-foreground">No invoices found matching your criteria</p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

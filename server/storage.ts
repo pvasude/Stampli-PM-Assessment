@@ -13,6 +13,7 @@ import {
   type Card,
   type InsertCard,
   type CardApproval,
+  type InsertCardApproval,
   type Transaction,
   type InsertTransaction,
   type GLAccount,
@@ -45,8 +46,8 @@ export interface IStorage {
   // Card Approval operations
   getCardApprovals(): Promise<CardApproval[]>;
   getCardApproval(id: string): Promise<CardApproval | undefined>;
-  createCardApproval(approval: Omit<CardApproval, 'id' | 'createdAt'>): Promise<CardApproval>;
-  updateCardApproval(id: string, approval: Partial<CardApproval>): Promise<CardApproval>;
+  createCardApproval(approval: InsertCardApproval): Promise<CardApproval>;
+  updateCardApproval(id: string, approval: Partial<InsertCardApproval>): Promise<CardApproval>;
 
   // Transaction operations
   getTransactions(): Promise<Transaction[]>;
@@ -156,7 +157,7 @@ export class DatabaseStorage implements IStorage {
     return approval || undefined;
   }
 
-  async createCardApproval(insertApproval: Omit<CardApproval, 'id' | 'createdAt'>): Promise<CardApproval> {
+  async createCardApproval(insertApproval: InsertCardApproval): Promise<CardApproval> {
     const [approval] = await db
       .insert(cardApprovals)
       .values(insertApproval)
@@ -164,7 +165,7 @@ export class DatabaseStorage implements IStorage {
     return approval;
   }
 
-  async updateCardApproval(id: string, updateData: Partial<CardApproval>): Promise<CardApproval> {
+  async updateCardApproval(id: string, updateData: Partial<InsertCardApproval>): Promise<CardApproval> {
     const [approval] = await db
       .update(cardApprovals)
       .set(updateData)
