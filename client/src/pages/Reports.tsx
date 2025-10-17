@@ -14,16 +14,17 @@ const mockStats = [
     trend: { value: "12% vs last month", isPositive: true },
   },
   {
+    title: "Total Cashback Earned",
+    value: "$54.75",
+    subtitle: "This month",
+    icon: TrendingUp,
+    trend: { value: "1% average rate", isPositive: true },
+  },
+  {
     title: "Card Utilization",
     value: "68%",
     subtitle: "$24,350 of $35,800 limit",
     icon: CreditCard,
-  },
-  {
-    title: "Avg Transaction",
-    value: "$812",
-    subtitle: "30 transactions",
-    icon: TrendingUp,
   },
   {
     title: "Cards Issued",

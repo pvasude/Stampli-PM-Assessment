@@ -1,0 +1,29 @@
+Reporting must include cash back earned on card transaction
+
+In the transactions page, for each transaction add a button to sync it to the erp
+
+In the transactions page, allow for all transactions to have the same coding details added/edited as the coding details in the card details flow. these are uniform across a company
+
+In requesting a card, spend limits must be based on time period or renewal frequency. for one time cards a user can allow 1 transaction for the fill spend amount or unlimited. for recurring spends, they must chose if the limit applies per month, quarter, or year. this should also be reflected in the card details page and when creating a card in the AP flow. A card does not need both daily and monthly limits
+
+In the card request flow, make ther allowed merchants list a multi select dropdown with a liust of merchant names and the MCC codes a multi select list with code number along with make
+
+Allowed merchants, MCC, card coding and if the card is recurring or one time with both amount and frequency should be reflected in the card details vie if blank and the field but mark it as -
+
+A user should be allowed to pay an overdue invoice the same way as a pending invopice
+
+In the pay invoice flow the type of card (recurring or one time) and frequncy must also be prefilled in the card basis the payment details of the invoice
+
+In the report section, the monthly trend is missing the graph
+
+In transactions, only transactions can only have 3 states, pending recipt, pending coding and ready to sync. only for transactions with both reciepts and coding are ready to sync and only then will the SYnc to ERP button be enabled. otherwise the transaction can not be synced to the erp
+
+when creating a card coding template is mandatory. it must be either inherited from an invoice of filled during the request flow. no cards can have empty coding details in the view details page
+
+a card can be locked from the view detailes page. when locked it can not be locked again but can be unlocked. when a card is suspended it can not be locked, unlocked, unsuspended or shared.
+
+in the virtual card page we have manage cards selection. add that to the view details page where the controls (merchant, mcc, spend amout, coding details can be edited. when edited, it must initiate a change approval request in the approval section and the changes only apply when they are approved. 
+
+Cards liked to an invoice must be marked as such in the card details page. these cards can not be edited. 
+
+In the card details page, allow filtering of cards by them being one time or recurring
