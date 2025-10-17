@@ -99,29 +99,45 @@ Preferred communication style: Simple, everyday language.
 **Card Management:**
 - Request new virtual cards (invoice-specific or expense cards)
 - Configure spend limits, validity periods, and merchant restrictions
-- Lock/unlock/suspend card operations
+- Card type selection: One-time cards (single or unlimited transactions) vs Recurring cards (monthly/quarterly/yearly reset)
+- Multi-select merchant and MCC code restrictions
+- Mandatory coding templates (GL Account, Department, Cost Center)
+- Lock/unlock/suspend card operations with proper state management
 - Real-time spend tracking against limits
+- Card type filtering on Cards page (one-time vs recurring)
+- Invoice-linked cards with edit prevention and visual indicators
+
+**Card Controls & Editing:**
+- Manage Card section for modifying card settings
+- Approval workflow for card modifications (spend limit, merchants, MCC codes, coding)
+- Invoice-linked cards cannot be edited
+- Suspended cards cannot be shared or modified
+- Locked cards can only be unlocked
 
 **Invoice Payment:**
 - Pay invoices with existing cards or generate new virtual cards
 - MCP (Merchant Category Portal) automation detection
 - Multi-payment method support (cards, ACH, wire transfer)
+- Coding template inheritance from invoice to card
 
 **Approval Workflows:**
 - Multi-level approval system for card requests
+- Approval workflow for card modifications
 - Approval queue with filtering and search
 - Approve/reject actions with audit trail
 
 **Transaction Reconciliation:**
-- GL account and cost center coding
+- 3-state transaction workflow: Pending Receipt → Pending Coding → Ready to Sync
+- GL account, department, and cost center coding (editable for any transaction)
 - Receipt upload and attachment
-- Sync status tracking for ERP integration
+- Conditional Sync to ERP button (enabled only for Ready to Sync transactions)
+- Individual and bulk transaction sync
 - Transaction filtering and search
 
 **Reporting & Analytics:**
 - Spend analytics by category and vendor
 - Card utilization metrics
-- Month-to-date tracking and trends
+- Month-to-date tracking and trends with visual graphs
 - Export capabilities for external analysis
 
 ## External Dependencies
