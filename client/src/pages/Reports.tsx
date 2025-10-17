@@ -128,7 +128,7 @@ export default function Reports() {
           <CardTitle>Monthly Trend</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-end justify-around gap-2">
+          <div className="h-64 flex items-end justify-around gap-4 px-4">
             {[
               { month: "Jan", amount: 18500 },
               { month: "Feb", amount: 21200 },
@@ -136,16 +136,18 @@ export default function Reports() {
             ].map((data, index) => {
               const maxAmount = 25000;
               const heightPercentage = (data.amount / maxAmount) * 100;
+              const barHeight = `${heightPercentage}%`;
               return (
-                <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                  <div className="text-sm font-mono font-medium">
+                <div key={index} className="flex-1 flex flex-col items-center gap-2" data-testid={`chart-bar-${data.month.toLowerCase()}`}>
+                  <div className="text-sm font-mono font-medium" data-testid={`text-amount-${data.month.toLowerCase()}`}>
                     ${(data.amount / 1000).toFixed(1)}k
                   </div>
                   <div
-                    className="w-full bg-primary rounded-t-md transition-all hover-elevate"
-                    style={{ height: `${heightPercentage}%` }}
+                    className="w-full bg-primary rounded-t-md transition-all hover-elevate min-h-[20px]"
+                    style={{ height: barHeight }}
+                    data-testid={`bar-${data.month.toLowerCase()}`}
                   />
-                  <div className="text-xs text-muted-foreground">{data.month}</div>
+                  <div className="text-xs text-muted-foreground" data-testid={`label-${data.month.toLowerCase()}`}>{data.month}</div>
                 </div>
               );
             })}
