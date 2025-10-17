@@ -74,6 +74,9 @@ export const insertCardSchema = createInsertSchema(cards).omit({
   createdAt: true,
   currentSpend: true,
   cardNumber: true,
+}).extend({
+  validFrom: z.string().optional().nullable().or(z.date().optional()),
+  validUntil: z.string().optional().nullable().or(z.date().optional()),
 });
 
 export type InsertCard = z.infer<typeof insertCardSchema>;

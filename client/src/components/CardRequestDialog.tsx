@@ -161,7 +161,6 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
         cardType: "Expense Card", // Will be stored in database
         cardholderName,
         spendLimit: parseFloat(spendLimit).toFixed(2),
-        currentSpend: "0.00",
         status: "Pending Approval",
         purpose,
         requestedBy: "Current User", // In a real app, this would be the logged-in user

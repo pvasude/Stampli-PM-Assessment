@@ -80,7 +80,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("POST /api/cards request body:", JSON.stringify(req.body, null, 2));
       const validated = insertCardSchema.parse(req.body);
-      const card = await storage.createCard(validated);
+      
+      // Convert date strings to Date objects for Drizzle
+      const cardData = {
+        ...validated,
+        validFrom: validated.validFrom ? new Date(validated.validFrom) : null,
+        validUntil: validated.validUntil ? new Date(validated.validUntil) : null,
+      };
+      
+      const card = await storage.createCard(cardData);
       res.json(card);
     } catch (error) {
       console.error("POST /api/cards validation error:", error);
