@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { CardDetailsDialog } from "@/components/CardDetailsDialog";
 
 interface Transaction {
   id: string;
@@ -62,6 +63,8 @@ interface CardDetailSheetProps {
     status: "Active" | "Locked" | "Suspended" | "Pending Approval";
     purpose?: string;
     cardNumber?: string;
+    expiryDate?: string;
+    cvv?: string;
     currency?: string;
     validFrom?: string;
     validUntil?: string;
@@ -138,6 +141,7 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
   const [showLockDialog, setShowLockDialog] = useState(false);
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [cardDetailsOpen, setCardDetailsOpen] = useState(false);
   const [editedSpendLimit, setEditedSpendLimit] = useState(card.spendLimit);
   const [editedAllowedMerchants, setEditedAllowedMerchants] = useState<string[]>(card.allowedMerchants || []);
   const [editedAllowedMccCodes, setEditedAllowedMccCodes] = useState<string[]>(card.allowedMccCodes || []);
@@ -284,10 +288,26 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="sm:max-w-[600px] overflow-y-auto" data-testid="sheet-card-details">
           <SheetHeader>
-            <SheetTitle>Card Details</SheetTitle>
-            <SheetDescription>
-              View and manage card controls, transactions, and sharing
-            </SheetDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <SheetTitle>Card Details</SheetTitle>
+                <SheetDescription>
+                  View and manage card controls, transactions, and sharing
+                </SheetDescription>
+              </div>
+              {card.cardNumber && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCardDetailsOpen(true)}
+                  data-testid="button-view-card-details"
+                  className="flex items-center gap-2"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  View Card
+                </Button>
+              )}
+            </div>
           </SheetHeader>
 
           <div className="mt-6 space-y-6">
@@ -847,6 +867,19 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CardDetailsDialog
+        open={cardDetailsOpen}
+        onOpenChange={setCardDetailsOpen}
+        card={{
+          cardholderName: card.cardholderName,
+          cardNumber: card.cardNumber,
+          expiryDate: card.expiryDate,
+          cvv: card.cvv,
+          spendLimit: card.spendLimit,
+          currentSpend: card.currentSpend,
+        }}
+      />
     </>
   );
 }
