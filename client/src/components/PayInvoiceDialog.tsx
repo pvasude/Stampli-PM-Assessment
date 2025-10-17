@@ -34,7 +34,7 @@ interface PayInvoiceDialogProps {
     totalAmount?: string;
     acceptsCards?: boolean;
     mcpAutomation?: "available" | "manual" | "unavailable";
-    paymentTerms?: "Net 30" | "Net 60" | "Net 90" | "Due on Receipt";
+    paymentTerms?: "Net 30" | "Net 60" | "Net 90" | "Due on Receipt" | "Monthly Recurring" | "Quarterly Recurring" | "Yearly Recurring" | "2 Installments" | "3 Installments" | "4 Installments";
   };
   onPay?: (method: string, details: any) => void;
 }
@@ -47,13 +47,28 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   // Determine card type and frequency based on payment terms
   const getCardDefaults = () => {
     const terms = invoice.paymentTerms || "Due on Receipt";
-    if (terms === "Due on Receipt") {
+    
+    // Standard one-time invoices with payment deadlines (Net 30/60/90 are NOT recurring)
+    if (terms === "Due on Receipt" || terms === "Net 30" || terms === "Net 60" || terms === "Net 90") {
       return { cardType: "one-time" as const, transactionCount: "1" as const, renewalFrequency: "month" as const };
-    } else if (terms === "Net 30") {
+    }
+    
+    // Installment payments (multiple transactions for same invoice)
+    if (terms === "2 Installments" || terms === "3 Installments" || terms === "4 Installments") {
+      return { cardType: "one-time" as const, transactionCount: "unlimited" as const, renewalFrequency: "month" as const };
+    }
+    
+    // Recurring bills (actual recurring expenses)
+    if (terms === "Monthly Recurring") {
       return { cardType: "recurring" as const, transactionCount: "1" as const, renewalFrequency: "month" as const };
-    } else if (terms === "Net 60" || terms === "Net 90") {
+    }
+    if (terms === "Quarterly Recurring") {
       return { cardType: "recurring" as const, transactionCount: "1" as const, renewalFrequency: "quarter" as const };
     }
+    if (terms === "Yearly Recurring") {
+      return { cardType: "recurring" as const, transactionCount: "1" as const, renewalFrequency: "year" as const };
+    }
+    
     return { cardType: "one-time" as const, transactionCount: "1" as const, renewalFrequency: "month" as const };
   };
   
@@ -164,6 +179,32 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                 </Badge>
               </AlertDescription>
             </Alert>
+
+            <div className="p-3 border rounded-lg bg-accent/20">
+              <div className="flex items-center gap-2 mb-2">
+                <CreditCard className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Card Configuration</span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant={cardType === "one-time" ? "secondary" : "outline"} data-testid="badge-selected-card-type">
+                  {cardType === "one-time" ? "One-Time Card" : "Recurring Card"}
+                </Badge>
+                <span className="text-xs text-muted-foreground" data-testid="text-selected-frequency">
+                  {cardType === "one-time" 
+                    ? (transactionCount === "1" ? "Single Transaction" : 
+                       (invoice.paymentTerms?.includes("Installments") 
+                        ? `Multiple Transactions (${invoice.paymentTerms.split(" ")[0]} installments)`
+                        : "Unlimited Transactions"))
+                    : (renewalFrequency === "month" ? "Monthly Reset" : 
+                       renewalFrequency === "quarter" ? "Quarterly Reset" : "Yearly Reset")}
+                </span>
+              </div>
+              {invoice.paymentTerms && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Auto-configured for: {invoice.paymentTerms}
+                </p>
+              )}
+            </div>
 
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {acceptsCards ? (

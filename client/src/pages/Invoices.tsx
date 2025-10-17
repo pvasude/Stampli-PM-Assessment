@@ -40,7 +40,7 @@ const mockInvoices = [
     dueDate: "Mar 25, 2024",
     status: "Pending" as const,
     description: "Cloud infrastructure hosting - March",
-    paymentTerms: "Due on Receipt" as const,
+    paymentTerms: "Monthly Recurring" as const,
   },
   {
     id: "inv-004",
@@ -49,8 +49,8 @@ const mockInvoices = [
     amount: "$3,500.00",
     dueDate: "Mar 10, 2024",
     status: "Overdue" as const,
-    description: "Brand refresh and website redesign",
-    paymentTerms: "Net 90" as const,
+    description: "Brand refresh and website redesign - 3 payments",
+    paymentTerms: "3 Installments" as const,
   },
   {
     id: "inv-005",
@@ -61,6 +61,26 @@ const mockInvoices = [
     status: "Paid" as const,
     description: "Q4 legal consultation services",
     paymentTerms: "Net 30" as const,
+  },
+  {
+    id: "inv-006",
+    invoiceNumber: "INV-2024-006",
+    vendorName: "AWS Cloud Services",
+    amount: "$12,500.00",
+    dueDate: "Apr 1, 2024",
+    status: "Approved" as const,
+    description: "Annual cloud infrastructure subscription",
+    paymentTerms: "Yearly Recurring" as const,
+  },
+  {
+    id: "inv-007",
+    invoiceNumber: "INV-2024-007",
+    vendorName: "Office Lease Corp",
+    amount: "$8,000.00",
+    dueDate: "Apr 5, 2024",
+    status: "Pending" as const,
+    description: "Q1 office lease - 4 monthly payments",
+    paymentTerms: "4 Installments" as const,
   },
 ];
 

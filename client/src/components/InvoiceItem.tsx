@@ -12,7 +12,7 @@ interface InvoiceItemProps {
   dueDate: string;
   status: "Pending" | "Paid" | "Overdue" | "Approved";
   description?: string;
-  paymentTerms?: "Net 30" | "Net 60" | "Net 90" | "Due on Receipt";
+  paymentTerms?: "Net 30" | "Net 60" | "Net 90" | "Due on Receipt" | "Monthly Recurring" | "Quarterly Recurring" | "Yearly Recurring" | "2 Installments" | "3 Installments" | "4 Installments";
   onViewDetails?: () => void;
 }
 
