@@ -7,11 +7,17 @@ import { CreditCard, FileText, TrendingUp, DollarSign } from "lucide-react";
 // TODO: remove mock functionality
 const mockStats = [
   {
-    title: "Total Card Spend",
-    value: "$24,350",
-    subtitle: "Across 12 active cards",
+    title: "Total AP Spend",
+    value: "$156,850",
+    subtitle: "Cards: $24k | Invoices: $132k",
     icon: DollarSign,
-    trend: { value: "12% from last month", isPositive: true },
+    trend: { value: "8% from last month", isPositive: true },
+  },
+  {
+    title: "Pending Invoices",
+    value: "24",
+    subtitle: "Total value: $45,200",
+    icon: FileText,
   },
   {
     title: "Active Cards",
@@ -20,15 +26,9 @@ const mockStats = [
     icon: CreditCard,
   },
   {
-    title: "Pending Approvals",
+    title: "Card Approvals",
     value: "3",
     subtitle: "Awaiting review",
-    icon: FileText,
-  },
-  {
-    title: "Available Limit",
-    value: "$45,650",
-    subtitle: "Total approved limit: $70,000",
     icon: TrendingUp,
   },
 ];
@@ -40,7 +40,7 @@ const mockCards = [
     cardholderName: "Sarah Johnson",
     spendLimit: "$5,000",
     currentSpend: "$3,250",
-    status: "Active" as const,
+    status: "Active" as "Active" | "Locked" | "Suspended" | "Pending Approval",
     purpose: "Office Supplies - Q1 2024",
     cardNumber: "4532123456789012",
   },
@@ -50,7 +50,7 @@ const mockCards = [
     cardholderName: "Michael Chen",
     spendLimit: "$3,000",
     currentSpend: "$1,800",
-    status: "Active" as const,
+    status: "Active" as "Active" | "Locked" | "Suspended" | "Pending Approval",
     purpose: "Marketing Conference Travel",
     cardNumber: "5412345678901234",
   },
@@ -87,7 +87,7 @@ export default function Dashboard() {
             Manage your virtual cards and invoice payments
           </p>
         </div>
-        <CardRequestDialog invoices={mockInvoices} />
+        <CardRequestDialog />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -118,7 +118,6 @@ export default function Dashboard() {
               <InvoiceItem
                 key={invoice.id}
                 {...invoice}
-                onPayWithCard={() => console.log(`Pay invoice: ${invoice.id}`)}
                 onViewDetails={() => console.log(`View invoice: ${invoice.id}`)}
               />
             ))}
