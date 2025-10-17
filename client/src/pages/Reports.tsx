@@ -1,7 +1,7 @@
 import { StatsCard } from "@/components/StatsCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, DollarSign, CreditCard, TrendingUp, Download } from "lucide-react";
+import { BarChart3, DollarSign, CreditCard, TrendingUp, Download, FileText, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // TODO: remove mock functionality
@@ -34,6 +34,36 @@ const mockStats = [
   },
 ];
 
+const apStats = [
+  {
+    title: "Invoices Paid",
+    value: "47",
+    subtitle: "This month",
+    icon: FileText,
+    trend: { value: "8 more than last month", isPositive: true },
+  },
+  {
+    title: "AP Spend Total",
+    value: "$156,420",
+    subtitle: "All payment methods",
+    icon: DollarSign,
+    trend: { value: "18% vs last month", isPositive: true },
+  },
+  {
+    title: "Card Payment %",
+    value: "64%",
+    subtitle: "$100,109 paid via cards",
+    icon: CreditCard,
+  },
+  {
+    title: "Avg. Payment Time",
+    value: "18 days",
+    subtitle: "From invoice to payment",
+    icon: Repeat,
+    trend: { value: "3 days faster", isPositive: true },
+  },
+];
+
 const spendByCategory = [
   { category: "Software & SaaS", amount: "$8,450", percentage: 35 },
   { category: "Office Supplies", amount: "$6,200", percentage: 25 },
@@ -57,7 +87,7 @@ export default function Reports() {
         <div>
           <h1 className="text-3xl font-semibold">Reports & Analytics</h1>
           <p className="text-muted-foreground mt-1">
-            Track spending patterns and card utilization
+            Track spending patterns, AP metrics, and card utilization
           </p>
         </div>
         <Button variant="outline" data-testid="button-export-report">
@@ -66,10 +96,22 @@ export default function Reports() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {mockStats.map((stat, index) => (
-          <StatsCard key={index} {...stat} />
-        ))}
+      <div>
+        <h2 className="text-lg font-semibold mb-3">Card Metrics</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {mockStats.map((stat, index) => (
+            <StatsCard key={index} {...stat} />
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold mb-3">AP Metrics</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {apStats.map((stat, index) => (
+            <StatsCard key={index} {...stat} />
+          ))}
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
