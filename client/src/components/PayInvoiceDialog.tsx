@@ -208,7 +208,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       const transaction = await transactionResponse.json();
       
       if (!transaction.approved) {
-        throw new Error("Transaction failed - insufficient funds or card limit exceeded");
+        throw new Error(transaction.declineReason || "Transaction declined - insufficient funds or card limit exceeded");
       }
       
       // Update invoice status to Paid

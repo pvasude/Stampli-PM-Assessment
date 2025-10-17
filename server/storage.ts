@@ -385,17 +385,17 @@ export class DatabaseStorage implements IStorage {
       // 4. Validate limits with fresh data
       const cardLimit = parseFloat(card.spendLimit);
       const projectedSpend = baseSpend + transactionAmount;
+      const walletBalance = parseFloat(wallet.balance);
+      
+      let declineReason: string | null = null;
       
       if (projectedSpend > cardLimit) {
-        throw new Error(`Transaction declined: Exceeds card limit (${projectedSpend} > ${cardLimit})`);
+        declineReason = `Exceeds card limit ($${projectedSpend.toFixed(2)} > $${cardLimit.toFixed(2)})`;
+      } else if (transactionAmount > walletBalance) {
+        declineReason = `Insufficient wallet balance ($${transactionAmount.toFixed(2)} > $${walletBalance.toFixed(2)})`;
       }
 
-      const walletBalance = parseFloat(wallet.balance);
-      if (transactionAmount > walletBalance) {
-        throw new Error(`Transaction declined: Insufficient wallet balance (${transactionAmount} > ${walletBalance})`);
-      }
-
-      // 5. Create transaction record
+      // 5. Create transaction record (approved or declined)
       const [transaction] = await tx
         .insert(transactions)
         .values({
@@ -403,20 +403,32 @@ export class DatabaseStorage implements IStorage {
           amount: params.amount,
           vendorName: params.merchant,
           transactionDate: new Date(),
-          status: "Pending Coding",
+          status: declineReason ? "Declined" : "Pending Coding",
           glAccount: params.glAccount,
           costCenter: params.costCenter,
         })
         .returning();
 
-      // 6. Update wallet balance from fresh value
+      // If declined, return early without updating balances
+      if (declineReason) {
+        return {
+          transaction,
+          newWalletBalance: wallet.balance,
+          newCardSpend: card.currentSpend,
+          monthlyReset: false,
+          declined: true,
+          declineReason,
+        } as any;
+      }
+
+      // 6. Update wallet balance from fresh value (only for approved)
       const newWalletBalance = (walletBalance - transactionAmount).toFixed(2);
       await tx
         .update(companyWallet)
         .set({ balance: newWalletBalance, updatedAt: new Date() })
         .where(eq(companyWallet.id, wallet.id));
 
-      // 7. Update card spend and reset date from fresh value
+      // 7. Update card spend and reset date from fresh value (only for approved)
       const newCardSpend = (baseSpend + transactionAmount).toFixed(2);
       const cardUpdate: any = { currentSpend: newCardSpend };
       
@@ -434,7 +446,8 @@ export class DatabaseStorage implements IStorage {
         newWalletBalance,
         newCardSpend,
         monthlyReset: needsReset,
-      };
+        declined: false,
+      } as any;
     });
   }
 }

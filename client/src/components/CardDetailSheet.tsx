@@ -40,15 +40,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { CardDetailsDialog } from "@/components/CardDetailsDialog";
+import { useQuery } from "@tanstack/react-query";
 
 interface Transaction {
   id: string;
   cardId: string;
   amount: string;
   vendorName: string;
-  transactionDate: string;
-  status: "Completed" | "Pending" | "Declined";
-  memo?: string;
+  transactionDate: string | Date;
+  status: string;
+  memo?: string | null;
+  glAccount?: string | null;
+  costCenter?: string | null;
+  receiptUrl?: string | null;
+  invoiceId?: string | null;
 }
 
 interface CardDetailSheetProps {
@@ -160,9 +165,28 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
   
   const isInvoiceLinked = !!card.invoiceId;
 
+  // Fetch all transactions from API
+  const { data: allTransactions = [] } = useQuery<Transaction[]>({
+    queryKey: ['/api/transactions'],
+  });
+
+  // Helper function to format transaction amount
+  const formatAmount = (amount: string | number): string => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return `$${num.toFixed(2)}`;
+  };
+
+  // Helper function to format transaction date
+  const formatDate = (date: string | Date): string => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  };
+
   // Filter transactions for this specific card
-  const cardTransactions = mockTransactions.filter(t => t.cardId === card.id);
-  const completedTransactions = cardTransactions.filter(t => t.status === "Completed" || t.status === "Pending");
+  const cardTransactions = allTransactions.filter(t => t.cardId === card.id);
+  const completedTransactions = cardTransactions.filter(t => 
+    t.status === "Pending Coding" || t.status === "Coded" || t.status === "Ready to Sync" || t.status === "Synced"
+  );
   const declinedTransactions = cardTransactions.filter(t => t.status === "Declined");
 
   // Check if one-time card should be auto-suspended
@@ -747,14 +771,14 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                           {getTransactionStatusIcon(transaction.status)}
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm">{transaction.vendorName}</p>
-                            <p className="text-xs text-muted-foreground">{transaction.transactionDate}</p>
+                            <p className="text-xs text-muted-foreground">{formatDate(transaction.transactionDate)}</p>
                             {transaction.memo && (
                               <p className="text-xs text-muted-foreground mt-1">{transaction.memo}</p>
                             )}
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">{transaction.amount}</p>
+                          <p className="font-semibold">{formatAmount(transaction.amount)}</p>
                           <Badge variant="outline" className="text-xs mt-1">
                             {transaction.status}
                           </Badge>
@@ -770,24 +794,24 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                 )}
               </TabsContent>
 
-              <TabsContent value="declined" className="space-y-3 mt-4">
+              <TabsContent value="declined" className="space-y-3 mt-4" data-testid="tab-content-declined">
                 {declinedTransactions.map((transaction) => (
-                  <Card key={transaction.id}>
+                  <Card key={transaction.id} data-testid={`declined-transaction-${transaction.id}`}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 flex-1">
                           {getTransactionStatusIcon(transaction.status)}
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm">{transaction.vendorName}</p>
-                            <p className="text-xs text-muted-foreground">{transaction.transactionDate}</p>
+                            <p className="font-medium text-sm" data-testid="text-vendor-name">{transaction.vendorName}</p>
+                            <p className="text-xs text-muted-foreground" data-testid="text-transaction-date">{formatDate(transaction.transactionDate)}</p>
                             {transaction.memo && (
                               <p className="text-xs text-destructive mt-1">{transaction.memo}</p>
                             )}
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">{transaction.amount}</p>
-                          <Badge variant="destructive" className="text-xs mt-1">
+                          <p className="font-semibold" data-testid="text-amount">{formatAmount(transaction.amount)}</p>
+                          <Badge variant="destructive" className="text-xs mt-1" data-testid="badge-declined">
                             Declined
                           </Badge>
                         </div>
@@ -796,7 +820,7 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                   </Card>
                 ))}
                 {declinedTransactions.length === 0 && (
-                  <p className="text-center text-sm text-muted-foreground py-8">
+                  <p className="text-center text-sm text-muted-foreground py-8" data-testid="text-no-declined">
                     No declined transactions
                   </p>
                 )}

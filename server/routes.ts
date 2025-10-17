@@ -291,6 +291,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         costCenter: card.costCenterTemplate || "CC-100",
       });
 
+      // Check if transaction was declined
+      if ((result as any).declined) {
+        return res.status(400).json({
+          ...result.transaction,
+          approved: false,
+          declined: true,
+          declineReason: (result as any).declineReason,
+          walletBalanceAfter: result.newWalletBalance,
+          cardSpendAfter: result.newCardSpend,
+        });
+      }
+
+      // Transaction was approved
       res.json({
         ...result.transaction,
         approved: true,
