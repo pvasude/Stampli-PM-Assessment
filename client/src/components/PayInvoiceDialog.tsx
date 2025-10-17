@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Dialog,
@@ -169,7 +169,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       // Parse the card limit to a number and convert to string for the API
       const limitAmount = parseFloat(cardLimit.replace(/[$,]/g, ''));
       
-      // Create the card
+      // Create the card with auto-approved status for invoice payments
       const cardData = {
         cardholderName,
         purpose: `Payment for ${invoice.invoiceNumber}`,
@@ -177,8 +177,9 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
         currentSpend: 0,
         validFrom: new Date().toISOString(),
         validUntil,
-        status: "Pending Approval",
-        requestedBy: "Current User", // Add required field
+        status: "Active", // Auto-approve invoice payment cards
+        requestedBy: cardholderName,
+        approvedBy: "Auto-Approved", // Mark as auto-approved
         cardType,
         transactionCount: cardType === "one-time" ? transactionCount : null,
         renewalFrequency: cardType === "recurring" ? renewalFrequency : null,
@@ -194,21 +195,18 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       
       const newCard = await createCardMutation.mutateAsync(cardData);
       
-      // Create approval record with correct schema fields
-      const approvalData = {
-        cardRequestId: newCard.id,
-        approverName: "Lisa Chen",
-        approverRole: "Finance Manager",
-        status: "Pending",
-        approvalLevel: 1,
-      };
+      // Update invoice status to Paid
+      await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
+        status: "Paid",
+        paymentMethod: `Virtual Card - ${newCard.last4 || "****"}`,
+      });
       
-      await createApprovalMutation.mutateAsync(approvalData);
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
       
       onPay?.("card", cardData);
       toast({
-        title: "Card request submitted",
-        description: `Virtual card for ${invoice.invoiceNumber} sent for approval`,
+        title: "Card created and invoice paid",
+        description: `Virtual card activated for ${invoice.invoiceNumber}`,
       });
       setOpen(false);
     } catch (error) {
@@ -220,24 +218,54 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
     }
   };
 
-  const handlePayWithACH = () => {
-    console.log("Processing ACH payment for invoice:", invoice.id);
-    onPay?.("ach", { invoiceId: invoice.id });
-    toast({
-      title: "ACH payment initiated",
-      description: `Processing ACH payment for ${invoice.invoiceNumber}`,
-    });
-    setOpen(false);
+  const handlePayWithACH = async () => {
+    try {
+      // Mark invoice as paid with ACH
+      await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
+        status: "Paid",
+        paymentMethod: "ACH Transfer",
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      
+      onPay?.("ach", { invoiceId: invoice.id });
+      toast({
+        title: "Invoice paid with ACH",
+        description: `ACH payment processed for ${invoice.invoiceNumber}`,
+      });
+      setOpen(false);
+    } catch (error) {
+      toast({
+        title: "Failed to process ACH payment",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handlePayWithCheck = () => {
-    console.log("Processing check payment for invoice:", invoice.id);
-    onPay?.("check", { invoiceId: invoice.id });
-    toast({
-      title: "Check issued",
-      description: `Check will be mailed for ${invoice.invoiceNumber}`,
-    });
-    setOpen(false);
+  const handlePayWithCheck = async () => {
+    try {
+      // Mark invoice as paid with Check
+      await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
+        status: "Paid",
+        paymentMethod: "Check",
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      
+      onPay?.("check", { invoiceId: invoice.id });
+      toast({
+        title: "Invoice paid with Check",
+        description: `Check issued for ${invoice.invoiceNumber}`,
+      });
+      setOpen(false);
+    } catch (error) {
+      toast({
+        title: "Failed to issue check",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
