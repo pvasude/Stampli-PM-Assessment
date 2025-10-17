@@ -15,7 +15,7 @@ interface CardItemProps {
   cardholderName: string;
   spendLimit: string;
   currentSpend: string;
-  status: "Active" | "Pending" | "Approved" | "Inactive";
+  status: "Active" | "Locked" | "Suspended" | "Pending Approval";
   purpose?: string;
   cardNumber?: string;
   onViewDetails?: () => void;
@@ -36,9 +36,9 @@ export function CardItem({
 }: CardItemProps) {
   const statusColors = {
     Active: "bg-chart-1 text-white",
-    Pending: "bg-chart-2 text-white",
-    Approved: "bg-chart-3 text-white",
-    Inactive: "bg-secondary text-secondary-foreground",
+    Locked: "bg-chart-2 text-white",
+    Suspended: "bg-destructive text-destructive-foreground",
+    "Pending Approval": "bg-chart-3 text-white",
   };
 
   const spendPercentage = (parseFloat(currentSpend.replace(/[$,]/g, '')) / parseFloat(spendLimit.replace(/[$,]/g, ''))) * 100;

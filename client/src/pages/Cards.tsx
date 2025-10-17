@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CardItem } from "@/components/CardItem";
 import { CardRequestDialog } from "@/components/CardRequestDialog";
+import { CardDetailSheet } from "@/components/CardDetailSheet";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import {
@@ -11,6 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+type CardStatus = "Active" | "Locked" | "Suspended" | "Pending Approval";
+
 // TODO: remove mock functionality
 const mockCards = [
   {
@@ -19,9 +22,13 @@ const mockCards = [
     cardholderName: "Sarah Johnson",
     spendLimit: "$5,000",
     currentSpend: "$3,250",
-    status: "Active" as const,
+    status: "Active" as CardStatus,
     purpose: "Office Supplies - Q1 2024",
     cardNumber: "4532123456789012",
+    currency: "USD",
+    validUntil: "2024-12-31",
+    allowedCountries: ["US", "CA"],
+    channelRestriction: "both",
   },
   {
     id: "2",
@@ -29,9 +36,14 @@ const mockCards = [
     cardholderName: "Michael Chen",
     spendLimit: "$3,000",
     currentSpend: "$1,800",
-    status: "Active" as const,
+    status: "Active" as CardStatus,
     purpose: "Marketing Conference Travel",
     cardNumber: "5412345678901234",
+    currency: "USD",
+    validUntil: "2024-11-30",
+    dailyLimit: "$500",
+    monthlyLimit: "$3,000",
+    allowedMerchants: ["Uber", "Airbnb", "Airlines"],
   },
   {
     id: "3",
@@ -39,9 +51,11 @@ const mockCards = [
     cardholderName: "Emily Rodriguez",
     spendLimit: "$8,000",
     currentSpend: "$8,000",
-    status: "Inactive" as const,
+    status: "Locked" as CardStatus,
     purpose: "IT Equipment Purchase",
     cardNumber: "4916123456789012",
+    currency: "USD",
+    validUntil: "2024-10-31",
   },
   {
     id: "4",
@@ -49,8 +63,19 @@ const mockCards = [
     cardholderName: "David Park",
     spendLimit: "$2,500",
     currentSpend: "$0",
-    status: "Approved" as const,
+    status: "Pending Approval" as CardStatus,
     purpose: "Client Entertainment",
+  },
+  {
+    id: "5",
+    cardType: "Expense Card" as const,
+    cardholderName: "Jessica Liu",
+    spendLimit: "$1,500",
+    currentSpend: "$1,200",
+    status: "Suspended" as CardStatus,
+    purpose: "Vendor Payments",
+    cardNumber: "4539876543210987",
+    currency: "USD",
   },
 ];
 
@@ -62,15 +87,22 @@ const mockInvoices = [
 export default function Cards() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedCard, setSelectedCard] = useState<typeof mockCards[0] | null>(null);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 
   const filteredCards = mockCards.filter((card) => {
     const matchesSearch =
       card.cardholderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       card.purpose?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
-      statusFilter === "all" || card.status.toLowerCase() === statusFilter.toLowerCase();
+      statusFilter === "all" || card.status.toLowerCase().replace(" ", "-") === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
+  
+  const handleViewDetails = (card: typeof mockCards[0]) => {
+    setSelectedCard(card);
+    setDetailSheetOpen(true);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -81,7 +113,7 @@ export default function Cards() {
             Manage all your virtual cards in one place
           </p>
         </div>
-        <CardRequestDialog invoices={mockInvoices} />
+        <CardRequestDialog />
       </div>
 
       <div className="flex gap-4">
@@ -102,9 +134,9 @@ export default function Cards() {
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="locked">Locked</SelectItem>
+            <SelectItem value="suspended">Suspended</SelectItem>
+            <SelectItem value="pending-approval">Pending Approval</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -114,7 +146,7 @@ export default function Cards() {
           <CardItem
             key={card.id}
             {...card}
-            onViewDetails={() => console.log(`View details: ${card.id}`)}
+            onViewDetails={() => handleViewDetails(card)}
             onManageCard={() => console.log(`Manage card: ${card.id}`)}
           />
         ))}
@@ -124,6 +156,14 @@ export default function Cards() {
         <div className="text-center py-12">
           <p className="text-muted-foreground">No cards found matching your criteria</p>
         </div>
+      )}
+
+      {selectedCard && (
+        <CardDetailSheet
+          open={detailSheetOpen}
+          onOpenChange={setDetailSheetOpen}
+          card={selectedCard}
+        />
       )}
     </div>
   );
