@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
 // TODO: remove mock functionality
@@ -135,9 +136,17 @@ export default function Transactions() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("all");
+  const [syncedTransactionIds, setSyncedTransactionIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
-  const filteredTransactions = mockTransactions.filter((txn) => {
+  // Update transaction status based on whether it's been synced
+  const transactionsWithStatus = mockTransactions.map((txn) => ({
+    ...txn,
+    status: syncedTransactionIds.has(txn.id) ? ("Synced" as const) : txn.status,
+  }));
+
+  const filteredTransactions = transactionsWithStatus.filter((txn) => {
     const matchesSearch =
       txn.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (txn.type === "card" && txn.cardholder?.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -146,17 +155,34 @@ export default function Transactions() {
       statusFilter === "all" || txn.status.toLowerCase().replace(/\s+/g, '-') === statusFilter;
     const matchesType =
       typeFilter === "all" || txn.type === typeFilter;
-    return matchesSearch && matchesStatus && matchesType;
+    const matchesTab =
+      activeTab === "all" || 
+      (activeTab === "synced" && txn.status === "Synced") ||
+      (activeTab === "all" && txn.status !== "Synced");
+    return matchesSearch && matchesStatus && matchesType && matchesTab;
   });
 
-  const readyToSyncCount = filteredTransactions.filter(txn => txn.status === "Ready to Sync").length;
+  const readyToSyncCount = transactionsWithStatus.filter(txn => txn.status === "Ready to Sync").length;
+  const syncedCount = syncedTransactionIds.size;
 
   const handleSyncAll = () => {
-    const readyTransactions = filteredTransactions.filter(txn => txn.status === "Ready to Sync");
-    console.log('Syncing transactions to ERP:', readyTransactions.map(t => t.id));
+    const readyTransactions = transactionsWithStatus.filter(txn => txn.status === "Ready to Sync");
+    const newSyncedIds = new Set(syncedTransactionIds);
+    readyTransactions.forEach(txn => newSyncedIds.add(txn.id));
+    setSyncedTransactionIds(newSyncedIds);
     toast({
       title: "Synced to ERP",
       description: `${readyTransactions.length} transaction(s) successfully synced to ERP`,
+    });
+  };
+
+  const handleSyncSingle = (txnId: string) => {
+    const newSyncedIds = new Set(syncedTransactionIds);
+    newSyncedIds.add(txnId);
+    setSyncedTransactionIds(newSyncedIds);
+    toast({
+      title: "Synced to ERP",
+      description: `Transaction ${txnId} successfully synced to ERP`,
     });
   };
 
@@ -179,7 +205,18 @@ export default function Transactions() {
         </Button>
       </div>
 
-      <div className="flex gap-3">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-fit grid-cols-2">
+          <TabsTrigger value="all" data-testid="tab-all-transactions">
+            All Transactions
+          </TabsTrigger>
+          <TabsTrigger value="synced" data-testid="tab-synced-transactions">
+            Synced Transactions ({syncedCount})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="space-y-6 mt-0">
+          <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -251,13 +288,7 @@ export default function Transactions() {
                   onUpdateGL={(value) => console.log(`GL updated for ${txn.id}:`, value)}
                   onUpdateDepartment={(value) => console.log(`Department updated for ${txn.id}:`, value)}
                   onUpdateCostCenter={(value) => console.log(`Cost center updated for ${txn.id}:`, value)}
-                  onSyncToERP={() => {
-                    console.log(`Syncing ${txn.id} to ERP`);
-                    toast({
-                      title: "Synced to ERP",
-                      description: `Transaction ${txn.id} successfully synced to ERP`,
-                    });
-                  }}
+                  onSyncToERP={() => handleSyncSingle(txn.id)}
                 />
               ))}
             </tbody>
@@ -270,6 +301,49 @@ export default function Transactions() {
           <p className="text-sm text-muted-foreground">No transactions found matching your criteria</p>
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="synced" className="space-y-6 mt-0">
+          <div className="rounded-lg overflow-hidden bg-card">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-muted/30">
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Type</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Date</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Vendor</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Amount</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Cashback</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Info</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">GL Account</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Department</th>
+                    <th className="p-4 text-left text-sm font-medium text-muted-foreground">Cost Center</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.map((txn) => (
+                    <TransactionRow
+                      key={txn.id}
+                      {...txn}
+                      onUploadReceipt={() => setSelectedTransaction(txn.id)}
+                      onUpdateGL={(value) => console.log(`GL updated for ${txn.id}:`, value)}
+                      onUpdateDepartment={(value) => console.log(`Department updated for ${txn.id}:`, value)}
+                      onUpdateCostCenter={(value) => console.log(`Cost center updated for ${txn.id}:`, value)}
+                      onSyncToERP={() => handleSyncSingle(txn.id)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {filteredTransactions.length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-sm text-muted-foreground">No synced transactions found</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {selectedTransaction && (
         <ReceiptUploadDialog
