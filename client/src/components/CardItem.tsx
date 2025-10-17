@@ -39,7 +39,7 @@ export function CardItem({
 }: CardItemProps) {
   const statusColors = {
     Active: "bg-chart-1/10 text-chart-1 border-chart-1/20",
-    Locked: "bg-chart-2/10 text-chart-2 border-chart-2/20",
+    Locked: "bg-chart-1/10 text-chart-1 border-chart-1/20",
     Suspended: "bg-destructive/10 text-destructive border-destructive/20",
     "Pending Approval": "bg-chart-3/10 text-chart-3 border-chart-3/20",
   };
