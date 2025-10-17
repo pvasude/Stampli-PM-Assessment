@@ -207,7 +207,17 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
               <div>
                 <h3 className="font-semibold text-lg">{card.cardholderName}</h3>
                 <p className="text-sm text-muted-foreground">{card.purpose}</p>
-                <Badge variant="outline" className="mt-2">{card.cardType}</Badge>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <Badge variant={card.limitType === "one-time" ? "secondary" : "outline"} data-testid="badge-card-type">
+                    {card.limitType === "one-time" ? "One-Time Card" : "Recurring Card"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground" data-testid="text-card-frequency">
+                    {card.limitType === "one-time" 
+                      ? (card.transactionCount === "1" ? "Single Transaction" : "Unlimited Transactions")
+                      : (card.renewalFrequency === "month" ? "Monthly Reset" : 
+                         card.renewalFrequency === "quarter" ? "Quarterly Reset" : "Yearly Reset")}
+                  </span>
+                </div>
               </div>
               <div className="text-right">
                 <p className={`text-sm font-medium ${getStatusColor(card.status)}`}>
