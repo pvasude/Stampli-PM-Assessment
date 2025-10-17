@@ -45,6 +45,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/invoices/:id/update-status", async (req, res) => {
+    try {
+      const invoice = await storage.updateInvoiceStatus(req.params.id);
+      res.json(invoice);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update invoice status" });
+    }
+  });
+
   app.delete("/api/invoices/:id", async (req, res) => {
     try {
       await storage.deleteInvoice(req.params.id);

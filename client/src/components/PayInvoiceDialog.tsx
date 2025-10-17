@@ -78,6 +78,7 @@ interface PayInvoiceDialogProps {
     acceptsCards?: boolean;
     mcpAutomation?: "available" | "manual" | "unavailable";
     paymentTerms?: "Net 30" | "Net 60" | "Net 90" | "Due on Receipt" | "Monthly Recurring" | "Quarterly Recurring" | "Yearly Recurring" | "2 Installments" | "3 Installments" | "4 Installments";
+    lockedCardId?: string | null;
   };
   onPay?: (method: string, details: any) => void;
 }
@@ -88,6 +89,19 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   const [cardPaymentMode, setCardPaymentMode] = useState<"pay-via-stampli" | "share-card">("pay-via-stampli");
   const [createdCard, setCreatedCard] = useState<any>(null);
   const { toast } = useToast();
+  
+  // Fetch locked card if invoice is locked to a card
+  const { data: lockedCard, isLoading: isLoadingLockedCard } = useQuery<{
+    id: string;
+    last4: string;
+    currentSpend: string;
+    spendLimit: string;
+    cardholderName: string;
+    status: string;
+  }>({
+    queryKey: ['/api/cards', invoice.lockedCardId],
+    enabled: !!invoice.lockedCardId,
+  });
   
   // Mutation to create card when paying invoice
   const createCardMutation = useMutation({
@@ -211,11 +225,14 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
         throw new Error(transaction.declineReason || "Transaction declined - insufficient funds or card limit exceeded");
       }
       
-      // Update invoice status to Paid
+      // Lock invoice to this card and let backend derive status based on payments
       await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
-        status: "Paid",
+        lockedCardId: newCard.id,
         paymentMethod: `Virtual Card - ${newCard.last4 || "****"}`,
       });
+      
+      // Update invoice status based on payments
+      await apiRequest('POST', `/api/invoices/${invoice.id}/update-status`, {});
       
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
@@ -275,11 +292,14 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       
       const newCard = await createCardMutation.mutateAsync(cardData);
       
-      // Update invoice status to Card Shared - Awaiting Payment
+      // Lock invoice to this card and set Card Shared status
       await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
         status: "Card Shared - Awaiting Payment",
         paymentMethod: `Virtual Card - ${newCard.last4 || "****"} (Shared)`,
+        lockedCardId: newCard.id,
       });
+      
+      // Note: Status remains "Card Shared - Awaiting Payment" until payment is made
       
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
       
@@ -471,21 +491,46 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
             </div>
           </div>
         ) : (
-          <Tabs value={paymentMethod} onValueChange={setPaymentMethod} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="card" data-testid="tab-card">
-                <CreditCard className="h-4 w-4 mr-2" />
-                Card
-              </TabsTrigger>
-              <TabsTrigger value="ach" data-testid="tab-ach">
-                <Building className="h-4 w-4 mr-2" />
-                ACH
-              </TabsTrigger>
-              <TabsTrigger value="check" data-testid="tab-check">
-                <FileCheck className="h-4 w-4 mr-2" />
-                Check
-              </TabsTrigger>
-            </TabsList>
+          <div className="space-y-4">
+            {/* Show locked card alert if invoice is locked to a card */}
+            {lockedCard && (
+              <Alert className="border-amber-500/20 bg-amber-500/5">
+                <AlertCircle className="h-4 w-4 text-amber-500" />
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Payment Method Locked</p>
+                    <p className="text-sm text-muted-foreground">
+                      This invoice is locked to Virtual Card ending in {lockedCard.last4 || "****"}.
+                      {parseFloat(lockedCard.currentSpend) === 0 ? (
+                        <span className="block mt-1">
+                          To use a different payment method, suspend the card from the Cards page.
+                        </span>
+                      ) : (
+                        <span className="block mt-1">
+                          All payments for this invoice must use this card (${lockedCard.currentSpend} already spent).
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <Tabs value={paymentMethod} onValueChange={setPaymentMethod} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="card" data-testid="tab-card" disabled={!!lockedCard}>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Card
+                </TabsTrigger>
+                <TabsTrigger value="ach" data-testid="tab-ach" disabled={!!lockedCard}>
+                  <Building className="h-4 w-4 mr-2" />
+                  ACH
+                </TabsTrigger>
+                <TabsTrigger value="check" data-testid="tab-check" disabled={!!lockedCard}>
+                  <FileCheck className="h-4 w-4 mr-2" />
+                  Check
+                </TabsTrigger>
+              </TabsList>
             
             <TabsContent value="card" className="space-y-4 mt-4">
               <Alert className="border-primary/20 bg-primary/5">
@@ -814,6 +859,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
               </Button>
             </TabsContent>
           </Tabs>
+          </div>
         )}
       </DialogContent>
     </Dialog>

@@ -81,6 +81,10 @@ export interface IStorage {
   createPayment(payment: InsertPayment): Promise<Payment>;
   updatePayment(id: string, payment: Partial<InsertPayment>): Promise<Payment>;
   
+  // Invoice status derivation
+  deriveInvoiceStatus(invoiceId: string): Promise<string>;
+  updateInvoiceStatus(invoiceId: string): Promise<Invoice>;
+  
   // Atomic transaction processing with row-level locking
   processTransaction(params: {
     cardId: string;
@@ -333,6 +337,56 @@ export class DatabaseStorage implements IStorage {
       .where(eq(payments.id, id))
       .returning();
     return payment;
+  }
+
+  // Derive invoice status based on payments
+  async deriveInvoiceStatus(invoiceId: string): Promise<string> {
+    const invoice = await this.getInvoice(invoiceId);
+    if (!invoice) return "Pending";
+    
+    // Get all payments for this invoice
+    const invoicePayments = await this.getPaymentsByInvoice(invoiceId);
+    
+    if (invoicePayments.length === 0) {
+      return invoice.status === "Card Shared - Awaiting Payment" ? "Card Shared - Awaiting Payment" : "Pending";
+    }
+    
+    // Calculate total paid amount
+    const totalPaid = invoicePayments
+      .filter(p => p.status === "Paid")
+      .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+    
+    // Check for overdue payments (PRIORITY: overdue trumps all other statuses)
+    const now = new Date();
+    const hasOverduePayments = invoicePayments.some(p => 
+      p.status !== "Paid" && new Date(p.dueDate) < now
+    );
+    
+    if (hasOverduePayments) {
+      return "Overdue";
+    }
+    
+    const invoiceAmount = parseFloat(invoice.amount);
+    
+    // If no payments made yet and status is "Card Shared", keep that status
+    if (totalPaid === 0 && invoice.status === "Card Shared - Awaiting Payment") {
+      return "Card Shared - Awaiting Payment";
+    }
+    
+    // Check payment status
+    if (totalPaid === 0) {
+      return "Pending";
+    } else if (totalPaid < invoiceAmount) {
+      return "Partially Paid";
+    } else {
+      return "Paid";
+    }
+  }
+
+  // Update invoice status based on payments
+  async updateInvoiceStatus(invoiceId: string): Promise<Invoice> {
+    const derivedStatus = await this.deriveInvoiceStatus(invoiceId);
+    return await this.updateInvoice(invoiceId, { status: derivedStatus });
   }
 
   // Atomic transaction processing with row-level locking
