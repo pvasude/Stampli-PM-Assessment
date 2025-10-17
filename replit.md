@@ -12,6 +12,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 17, 2025 - Critical Security Fix (Card Data Protection):**
+- Removed sensitive card data from database schema (full PAN and CVV)
+- Cards table now stores only last4 digits and expiryDate for display purposes
+- Updated card approval workflow to generate only safe display fields
+- Updated pay-invoice simulation to avoid storing full card details
+- Removed cardNumber references from frontend (Dashboard, etc.)
+- Validated: No sensitive card data is stored or exposed via API
+- Database schema pushed successfully with --force flag to remove sensitive columns
+
 **October 17, 2025 - Database Integration Complete:**
 - Migrated from in-memory mock data to PostgreSQL with Drizzle ORM
 - Implemented complete DatabaseStorage class with CRUD operations
@@ -102,6 +111,7 @@ Preferred communication style: Simple, everyday language.
    - Invoice association for invoice-specific cards
    - Approval workflow fields (requested by, approved by)
    - Validity period and merchant restrictions
+   - Security: Stores only last4 digits and expiryDate (no full PAN or CVV)
 
 4. **Transactions Table:**
    - Transaction details (amount, date, merchant)
