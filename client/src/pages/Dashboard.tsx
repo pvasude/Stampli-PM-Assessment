@@ -2,7 +2,9 @@ import { StatsCard } from "@/components/StatsCard";
 import { CardItem } from "@/components/CardItem";
 import { InvoiceItem } from "@/components/InvoiceItem";
 import { CardRequestDialog } from "@/components/CardRequestDialog";
+import { Button } from "@/components/ui/button";
 import { CreditCard, FileText, TrendingUp, DollarSign } from "lucide-react";
+import { useLocation } from "wouter";
 
 // TODO: remove mock functionality
 const mockStats = [
@@ -78,42 +80,65 @@ const mockInvoices = [
 ];
 
 export default function Dashboard() {
+  const [location, navigate] = useLocation();
+  const isOnInvoicesPage = location === "/invoices";
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-xl font-medium">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage your virtual cards and invoice payments
           </p>
         </div>
         <CardRequestDialog />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {mockStats.map((stat, index) => (
           <StatsCard key={index} {...stat} />
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Recent Cards</h2>
-          <div className="space-y-3">
+      <div className="grid lg:grid-cols-2 gap-8">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium">Recent Cards</h2>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/cards")}
+              data-testid="button-view-all-cards"
+            >
+              View All Cards
+            </Button>
+          </div>
+          <div className="space-y-4">
             {mockCards.map((card) => (
               <CardItem
                 key={card.id}
                 {...card}
-                onViewDetails={() => console.log(`View details: ${card.id}`)}
-                onManageCard={() => console.log(`Manage card: ${card.id}`)}
+                onViewDetails={() => navigate("/cards")}
               />
             ))}
           </div>
         </div>
 
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Pending Invoices</h2>
-          <div className="space-y-3">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium">Pending Invoices</h2>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/invoices")}
+              disabled={isOnInvoicesPage}
+              data-testid="button-view-invoices"
+            >
+              View Invoices
+            </Button>
+          </div>
+          <div className="space-y-4">
             {mockInvoices.map((invoice) => (
               <InvoiceItem
                 key={invoice.id}
