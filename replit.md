@@ -124,6 +124,16 @@ Preferred communication style: Simple, everyday language.
 - Multi-payment method support (cards, ACH, wire transfer)
 - Coding template inheritance from invoice to card
 
+**Dashboard:**
+- Overview of total AP spend with card and invoice breakdown
+- Pending invoices count and total value
+- Active cards count by type (invoice vs expense cards)
+- Card approval queue summary
+- Recent cards section with quick navigation to Cards page
+- Pending invoices section with "View Invoices" button (disabled when on invoices page)
+- Click on card Eye icon to navigate to Cards page
+- "View All Cards" button for quick access to card management
+
 **Approval Workflows:**
 - Multi-level approval system for card requests
 - Approval workflow for card modifications
@@ -131,12 +141,15 @@ Preferred communication style: Simple, everyday language.
 - Approve/reject actions with audit trail
 
 **Transaction Reconciliation:**
-- 3-state transaction workflow: Pending Receipt → Pending Coding → Ready to Sync
+- 3-state transaction workflow: Pending Receipt → Pending Coding → Ready to Sync → Synced
 - GL account, department, and cost center coding (editable for any transaction)
 - Receipt upload and attachment
 - Conditional Sync to ERP button (enabled only for Ready to Sync transactions)
 - Individual and bulk transaction sync
 - Transaction filtering and search
+- Tabbed interface: "All Transactions" and "Synced Transactions"
+- Synced transactions are automatically moved to the Synced Transactions tab after ERP sync
+- Tab count displays number of synced transactions
 
 **Reporting & Analytics:**
 - Spend analytics by category and vendor
