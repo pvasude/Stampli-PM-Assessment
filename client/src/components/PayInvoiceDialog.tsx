@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Dialog,
   DialogContent,
@@ -84,6 +86,28 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   const [paymentMethod, setPaymentMethod] = useState("card");
   const { toast } = useToast();
   
+  // Mutation to create card when paying invoice
+  const createCardMutation = useMutation({
+    mutationFn: async (cardData: any) => {
+      const response = await apiRequest('POST', '/api/cards', cardData);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cards'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/card-approvals'] });
+    },
+  });
+
+  const createApprovalMutation = useMutation({
+    mutationFn: async (approvalData: any) => {
+      const response = await apiRequest('POST', '/api/card-approvals', approvalData);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/card-approvals'] });
+    },
+  });
+  
   // Determine card type and frequency based on payment terms
   const getCardDefaults = () => {
     const terms = invoice.paymentTerms || "Due on Receipt";
@@ -131,29 +155,67 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   const acceptsCards = invoice.acceptsCards !== false;
   const mcpAutomation = invoice.mcpAutomation || "available";
 
-  const handlePayWithCard = () => {
-    const cardDetails = {
-      invoiceId: invoice.id,
-      cardholderName,
-      spendLimit: cardLimit,
-      validUntil,
-      channelRestriction,
-      allowedMerchants: [allowedMerchants],
-      currency,
-      cardType: "Invoice Card",
-      limitType: cardType,
-      transactionCount: cardType === "one-time" ? transactionCount : null,
-      renewalFrequency: cardType === "recurring" ? renewalFrequency : null,
-      purpose: `Payment for ${invoice.invoiceNumber}`,
-    };
-    
-    console.log("Generating card for invoice:", cardDetails);
-    onPay?.("card", cardDetails);
-    toast({
-      title: "Payment processed",
-      description: `Virtual card generated for ${invoice.invoiceNumber} - ${cardLimit}`,
-    });
-    setOpen(false);
+  const handlePayWithCard = async () => {
+    if (!cardholderName || !validUntil) {
+      toast({
+        title: "Missing information",
+        description: "Please provide cardholder name and valid until date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Parse the card limit to a number
+      const limitAmount = parseFloat(cardLimit.replace(/[$,]/g, ''));
+      
+      // Create the card
+      const cardData = {
+        cardholderName,
+        purpose: `Payment for ${invoice.invoiceNumber}`,
+        spendLimit: limitAmount,
+        currentSpend: 0,
+        validFrom: new Date().toISOString(),
+        validUntil,
+        status: "Pending Approval",
+        cardType,
+        transactionCount: cardType === "one-time" ? transactionCount : null,
+        renewalFrequency: cardType === "recurring" ? renewalFrequency : null,
+        currency,
+        channelRestriction,
+        allowedMerchants,
+        allowedCountries,
+        invoiceId: invoice.id,
+        glAccount: invoice.glAccount || null,
+        department: invoice.department || null,
+        costCenter: invoice.costCenter || null,
+      };
+      
+      const newCard = await createCardMutation.mutateAsync(cardData);
+      
+      // Create approval record
+      const approvalData = {
+        cardId: newCard.id,
+        requestedBy: "Current User",
+        approver: "Lisa Chen",
+        status: "Pending",
+      };
+      
+      await createApprovalMutation.mutateAsync(approvalData);
+      
+      onPay?.("card", cardData);
+      toast({
+        title: "Card request submitted",
+        description: `Virtual card for ${invoice.invoiceNumber} sent for approval`,
+      });
+      setOpen(false);
+    } catch (error) {
+      toast({
+        title: "Failed to create card",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePayWithACH = () => {
