@@ -1,19 +1,21 @@
-# Design Guidelines: Stampli AP + Cards Prototype
+# Design Guidelines: Stampli AP + Cards - Purple Brand Variant
 
 ## Design Approach
 
-**Selected Approach**: Design System (Enterprise Dashboard)
+**Selected Approach**: Design System (Enterprise Finance Platform)
 
-**Justification**: This is a utility-focused, information-dense enterprise finance tool where clarity, efficiency, and data visualization are paramount. Drawing inspiration from:
-- **Stripe Dashboard**: Clean financial data presentation, card-based layouts, subtle interactions
-- **Linear**: Typography-first design, efficient workflows, minimal chrome
-- **Material Design**: Structured information hierarchy, consistent component patterns
+**Justification**: Information-dense invoice management platform requiring clarity, efficiency, and seamless collaboration. Drawing inspiration from:
+- **Stripe Dashboard**: Clean data hierarchy, card-based layouts
+- **Linear**: Typography-first design, efficient workflows
+- **Notion**: Collaborative features, inline commenting
+- **Intercom**: Integrated messaging patterns
 
 **Key Design Principles**:
-1. Information clarity over visual flair
-2. Workflow efficiency through consistent patterns
-3. Trust through professional, polished execution
-4. Progressive disclosure for complex financial data
+1. Invoice workflows as primary focus
+2. Real-time collaboration embedded throughout
+3. AI assistance (Billy bot) contextually integrated
+4. Single-screen efficiency with slide-out details
+5. Information density with visual breathing room
 
 ---
 
@@ -22,132 +24,154 @@
 ### A. Color Palette
 
 **Light Mode**:
-- Primary Brand: 182 100% 38% (Stampli blue-green #00B6C2)
-- Primary Hover: 182 100% 32%
-- Background Primary: 0 0% 100% (white)
-- Background Secondary: 210 17% 98% (light gray)
-- Background Card: 0 0% 100% with subtle shadow
-- Border Default: 214 15% 91%
+- Primary Brand: 258 59% 51% (#6B46C1 - Stampli purple)
+- Primary Hover: 258 59% 43%
+- Primary Light: 258 59% 96% (subtle backgrounds)
+- Background Primary: 0 0% 100%
+- Background Secondary: 252 6% 97%
+- Background Card: 0 0% 100%
+- Border: 240 6% 90%
 - Text Primary: 222 47% 11%
 - Text Secondary: 215 14% 34%
 - Text Muted: 215 10% 55%
 - Success: 142 76% 36%
 - Warning: 38 92% 50%
 - Error: 0 84% 60%
-- Info: 199 89% 48%
+- AI Accent: 280 70% 60% (Billy bot interactions)
 
 **Dark Mode**:
-- Primary Brand: 182 100% 45%
-- Primary Hover: 182 100% 52%
+- Primary Brand: 258 59% 58%
+- Primary Hover: 258 59% 65%
 - Background Primary: 222 47% 11%
 - Background Secondary: 217 33% 17%
 - Background Card: 217 33% 19%
-- Border Default: 215 20% 27%
+- Border: 215 20% 27%
 - Text Primary: 210 40% 98%
 - Text Secondary: 214 15% 75%
-- Text Muted: 215 10% 55%
 
 ### B. Typography
 
 **Font Families**:
-- Primary: 'Inter', system-ui, -apple-system, sans-serif (via Google Fonts)
-- Monospace: 'JetBrains Mono', 'Courier New', monospace (for transaction IDs, amounts)
+- Primary: 'Inter', system-ui, sans-serif (Google Fonts)
+- Monospace: 'JetBrains Mono', monospace (amounts, invoice IDs)
 
 **Type Scale**:
-- Display (Dashboard Headers): text-3xl font-semibold (30px)
-- Page Title: text-2xl font-semibold (24px)
-- Section Header: text-xl font-semibold (20px)
-- Card Title: text-lg font-medium (18px)
-- Body Large: text-base font-normal (16px)
-- Body: text-sm font-normal (14px)
-- Caption: text-xs font-normal (12px)
-- Financial Data: text-sm font-mono (tabular-nums for alignment)
+- Page Title: text-2xl font-semibold
+- Section Header: text-lg font-semibold
+- Card Title: text-base font-medium
+- Body: text-sm
+- Caption/Labels: text-xs
+- Financial Data: text-sm font-mono tabular-nums
 
 ### C. Layout System
 
-**Spacing Primitives**: Use Tailwind units of **2, 4, 6, 8, 12, 16** for consistent rhythm
-- Component padding: p-4, p-6
-- Card spacing: p-6, p-8
-- Section gaps: gap-4, gap-6, gap-8
-- Page margins: px-6 md:px-8 lg:px-12
+**Spacing Primitives**: Tailwind units **2, 4, 6, 8, 12** for consistent rhythm
+- Card padding: p-6
+- Component spacing: gap-4, gap-6
+- Page margins: px-6 lg:px-8
 
 **Container Strategy**:
-- Dashboard width: max-w-7xl mx-auto
-- Modal/Drawer width: max-w-2xl for forms, max-w-4xl for detailed views
-- Card max-width: Individual cards naturally size within grid
+- Main content: max-w-7xl mx-auto
+- Slide-out panels: w-full lg:w-[480px] for detail views
+- Modals: max-w-2xl for forms, max-w-4xl for invoice details
 
 **Grid Patterns**:
-- Cards Dashboard: grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6
-- Transaction Table: Full-width responsive table
-- Detail View: Two-column layout (Details left, Actions right) on lg+ breakpoints
+- Dashboard KPIs: grid-cols-2 lg:grid-cols-4 gap-4
+- Invoice table: Full-width with sticky columns
+- Split view: 60/40 ratio (list/detail) on lg+ breakpoints
 
 ### D. Component Library
 
 **Navigation**:
-- Top bar with app logo, breadcrumbs, user profile (h-16, border-b)
-- Left sidebar navigation with icons + labels (w-64, collapsible to w-16 icon-only on mobile)
-- Active state: bg-primary/10 with left border-l-4 border-primary
+- Top bar (h-16): Logo, global search, Billy AI chat trigger, notifications, profile
+- Left sidebar (w-64, collapsible): Main nav with purple active states (bg-primary/10 border-l-4)
+- Breadcrumbs below top bar for context
 
-**Cards (Primary Building Block)**:
-- Base: bg-card rounded-lg border shadow-sm p-6
-- Interactive: hover:shadow-md transition-shadow cursor-pointer
-- Status indicators: Top-right badge (Approved, Pending, Active)
-- Header with icon + title + action button
-- Divider: border-t my-4 for section separation within cards
+**Dashboard KPIs**:
+- Stat cards: Large metric (text-3xl font-bold) + label + trend arrow
+- Color-coded borders (left-4): Purple for totals, green for approved, amber for pending
+- Compact layout with icons (Heroicons) aligned right
 
-**Data Display**:
-- Tables: Striped rows (even:bg-gray-50), sticky header, responsive overflow-x-auto
-- Key-Value Pairs: dl grid (dt font-medium text-muted, dd text-primary)
-- Status Badges: Inline-flex rounded-full px-3 py-1 text-xs font-medium (green for success, yellow for pending, gray for inactive)
-- Financial Amounts: Font-mono text-right with currency symbol, color-coded (positive: text-success, negative: text-error)
+**Invoice-Centric Cards**:
+- Primary layout: Invoice header (vendor, amount, status badge) + expandable details
+- Status badges: rounded-full px-3 py-1 text-xs font-medium (Pending Approval: amber, Approved: green, Coding: blue, Synced: purple)
+- Quick actions menu (three-dots) always visible on hover
+- Inline GL coding with dropdown + autocomplete
 
-**Forms**:
-- Input fields: border rounded-md px-3 py-2 focus:ring-2 focus:ring-primary
-- Labels: text-sm font-medium mb-2 block
-- Dropdowns: Custom styled select with chevron icon
-- Radio/Checkbox: Accent color matching primary brand
-- Form sections: Space-y-6 for field groups
+**Messaging & Collaboration**:
+- Threaded comments embedded in invoice cards (expandable section)
+- @mentions with purple highlight, avatar chips
+- Billy AI responses: Distinct container with gradient background (purple-to-violet) + bot avatar
+- Typing indicators for active collaborators
+- Unread message count badges on invoices
 
-**Buttons**:
-- Primary: bg-primary text-white hover:bg-primary-hover rounded-md px-4 py-2
-- Secondary: border border-gray-300 bg-white hover:bg-gray-50
-- Danger: bg-error text-white hover:bg-error/90
-- Icon-only: p-2 rounded-md with hover:bg-gray-100
+**Billy AI Integration**:
+- Floating chat button (bottom-right, purple gradient)
+- Slide-in chat panel with conversation history
+- AI suggestions inline: "Billy suggests coding to: [GL Code]" with one-click apply
+- Context-aware: Knows current invoice, suggests approvers, flags anomalies
 
-**Modals/Drawers**:
-- Overlay: Fixed inset-0 bg-black/50 backdrop-blur-sm
-- Content: Slide-in from right (drawer) or center (modal) with rounded-lg bg-card
-- Header: px-6 py-4 border-b with title and close button
-- Footer: px-6 py-4 border-t with action buttons (right-aligned)
+**Data Tables**:
+- Sticky header with column sorting
+- Zebra striping (even:bg-gray-50/50)
+- Expandable rows for invoice line items
+- Inline editing with focus:ring-2 ring-primary
+- Multi-select checkboxes for bulk actions
+
+**Forms & Inputs**:
+- Labels: text-sm font-medium text-secondary mb-1
+- Inputs: border-gray-300 focus:border-primary focus:ring-2 ring-primary/20 rounded-md
+- Validation: Inline error messages (text-error text-xs mt-1)
+- Auto-save indicators: Small checkmark with "Saved" text
+
+**Slide-Out Panels**:
+- Invoice detail drawer: Slide from right, full height, shadow-2xl
+- Header: Invoice # + vendor + close button (X)
+- Tabbed sections: Details | Line Items | Activity | Messages
+- Footer: Action buttons (Approve, Reject, Request Changes)
+
+**Approval Workflows**:
+- Horizontal timeline: Circles connected by lines, current step highlighted purple
+- Approver cards: Avatar + name + timestamp + action taken
+- Pending approver: Pulsing purple ring, action buttons visible
 
 **Empty States**:
-- Centered icon (text-6xl text-gray-300) + heading + description + CTA button
-- Use for "No cards yet", "No transactions", etc.
+- Centered icon (text-gray-300) + heading + description
+- Billy AI suggestion: "Need help? Ask Billy to find invoices for you"
+- CTA button to trigger relevant action
+
+**Status Indicators**:
+- Real-time sync status: Small animated icon (syncing) or checkmark (synced)
+- Approval progress: Linear progress bar (purple gradient)
+- GL coding completion: Percentage badge with color transition (red→amber→green)
 
 ### E. Dashboard-Specific Patterns
 
-**Metrics Summary Row**:
-- Grid of 3-4 stat cards at page top (Total Spend, Active Cards, Pending Approvals)
-- Large number (text-3xl font-bold) with label below, trend indicator optional
+**Single-Screen Workflow**:
+- Master-detail layout: Invoice list left (40%), detail panel right (60%) on desktop
+- Mobile: Stack with slide-over detail view
+- Persistent filters/search at top, results update live
+- Keyboard shortcuts overlay (Command+K menu)
 
-**Card Request Flow**:
-- Multi-step form with progress indicator (step 1/3)
-- Each step in separate card with clear next/back actions
-- Invoice vs Expense card type selection with radio cards (visual selection)
+**Information Density**:
+- Compact row height in tables (h-12) with clear hover states
+- Condensed card layouts with strategic use of dividers
+- Expandable sections to reveal complexity on demand
+- Smart truncation with tooltips on hover
 
-**Transaction List**:
-- Table with columns: Date, Vendor, Amount, Cardholder, Status, GL Code, Actions
-- Inline edit for GL coding (dropdown appears on click)
-- Quick actions menu (three-dot icon) for receipt upload, view details
+**Collaboration Hub**:
+- Activity feed sidebar: Recent comments, approvals, Billy actions
+- Live presence indicators: Small colored dots on avatars
+- Notification center: Grouped by type (Mentions, Approvals, AI Suggestions)
 
-**Approval Workflow**:
-- Timeline component showing request → approval → issuance flow
-- Approver avatar + name + timestamp for each step
-- Pending state with action buttons (Approve/Reject) for approvers
+**No Images Required**: Enterprise dashboard with data-driven UI, Heroicons for all icons, user avatars (initials in purple gradients if no photo), Billy AI bot avatar (distinct bot icon in gradient circle).
 
-**Receipt Upload**:
-- Drag-drop zone with dashed border
-- Thumbnail preview after upload with remove option
-- Required indicator before sync to ERP
+---
 
-**No Images Required**: This is a dashboard application - all visuals are data-driven UI components, icons from Heroicons, and user avatars (initials in colored circles if no photo).
+## Accessibility & Performance
+
+- Consistent dark mode across all components including form inputs
+- ARIA labels for icon buttons, screen reader announcements for AI suggestions
+- Keyboard navigation for all workflows (Tab, Enter, Esc)
+- Reduced motion preferences honored (prefers-reduced-motion)
+- Lazy load invoice details, virtual scrolling for large tables
