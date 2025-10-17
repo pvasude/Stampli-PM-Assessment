@@ -13,6 +13,11 @@ import { format } from "date-fns";
 function formatCard(card: Card) {
   return {
     ...card,
+    cardType: card.cardType as "Invoice Card" | "Expense Card",
+    status: card.status as "Active" | "Locked" | "Suspended" | "Pending Approval",
+    purpose: card.purpose ?? undefined,
+    cardNumber: card.cardNumber ?? undefined,
+    invoiceId: card.invoiceId ?? undefined,
     spendLimit: `$${parseFloat(card.spendLimit).toLocaleString()}`,
     currentSpend: `$${parseFloat(card.currentSpend).toLocaleString()}`,
     validUntil: card.validUntil ? new Date(card.validUntil).toISOString().split('T')[0] : undefined,
@@ -25,6 +30,8 @@ function formatCard(card: Card) {
 function formatInvoice(invoice: Invoice) {
   return {
     ...invoice,
+    status: invoice.status as "Pending" | "Paid" | "Overdue" | "Approved",
+    description: invoice.description ?? undefined,
     amount: `$${parseFloat(invoice.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     dueDate: format(new Date(invoice.dueDate), 'MMM dd, yyyy'),
     paymentType: invoice.paymentMethod || 'card' as const,
