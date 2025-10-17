@@ -125,7 +125,8 @@ export default function Approvals() {
   // Mutation to approve/reject card
   const updateCardMutation = useMutation({
     mutationFn: async ({ cardId, status, approvedBy }: { cardId: string, status: string, approvedBy?: string }) => {
-      return await apiRequest(`/api/cards/${cardId}`, 'PATCH', { status, approvedBy });
+      const response = await apiRequest('PATCH', `/api/cards/${cardId}`, { status, approvedBy });
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cards'] });
@@ -136,7 +137,8 @@ export default function Approvals() {
   // Mutation to update approval
   const updateApprovalMutation = useMutation({
     mutationFn: async ({ approvalId, status, approvedAt }: { approvalId: string, status: string, approvedAt?: string }) => {
-      return await apiRequest(`/api/card-approvals/${approvalId}`, 'PATCH', { status, approvedAt });
+      const response = await apiRequest('PATCH', `/api/card-approvals/${approvalId}`, { status, approvedAt });
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/card-approvals'] });

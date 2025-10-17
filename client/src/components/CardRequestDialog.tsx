@@ -92,8 +92,8 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
   // Mutation to create card request
   const createCardMutation = useMutation({
     mutationFn: async (cardData: any) => {
-      const response = await apiRequest('/api/cards', 'POST', cardData);
-      return response;
+      const response = await apiRequest('POST', '/api/cards', cardData);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cards'] });
@@ -103,8 +103,8 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
 
   const createApprovalMutation = useMutation({
     mutationFn: async (approvalData: any) => {
-      const response = await apiRequest('/api/card-approvals', 'POST', approvalData);
-      return response;
+      const response = await apiRequest('POST', '/api/card-approvals', approvalData);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/card-approvals'] });

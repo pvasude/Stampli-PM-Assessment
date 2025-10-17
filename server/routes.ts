@@ -78,11 +78,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/cards", async (req, res) => {
     try {
+      console.log("POST /api/cards request body:", JSON.stringify(req.body, null, 2));
       const validated = insertCardSchema.parse(req.body);
       const card = await storage.createCard(validated);
       res.json(card);
     } catch (error) {
-      res.status(400).json({ error: "Invalid card data" });
+      console.error("POST /api/cards validation error:", error);
+      res.status(400).json({ error: "Invalid card data", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
