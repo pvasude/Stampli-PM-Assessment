@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ApprovalItem } from "@/components/ApprovalItem";
 import { ApprovalDetailsDialog } from "@/components/ApprovalDetailsDialog";
 import { Input } from "@/components/ui/input";
@@ -10,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import type { CardApproval, Card } from "@shared/schema";
 
 // TODO: remove mock functionality
 const mockApprovals = [
@@ -106,9 +110,70 @@ const mockApprovals = [
 export default function Approvals() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedRequest, setSelectedRequest] = useState<typeof mockApprovals[0] | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const { toast } = useToast();
 
-  const filteredApprovals = mockApprovals.filter((approval) => {
+  // Fetch approvals and cards
+  const { data: approvalsData, isLoading: approvalsLoading } = useQuery<CardApproval[]>({
+    queryKey: ['/api/card-approvals'],
+  });
+
+  const { data: cardsData } = useQuery<Card[]>({
+    queryKey: ['/api/cards'],
+  });
+
+  // Mutation to approve/reject card
+  const updateCardMutation = useMutation({
+    mutationFn: async ({ cardId, status, approvedBy }: { cardId: string, status: string, approvedBy?: string }) => {
+      return await apiRequest(`/api/cards/${cardId}`, 'PATCH', { status, approvedBy });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cards'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/card-approvals'] });
+    },
+  });
+
+  // Mutation to update approval
+  const updateApprovalMutation = useMutation({
+    mutationFn: async ({ approvalId, status, approvedAt }: { approvalId: string, status: string, approvedAt?: string }) => {
+      return await apiRequest(`/api/card-approvals/${approvalId}`, 'PATCH', { status, approvedAt });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/card-approvals'] });
+    },
+  });
+
+  // Combine approval and card data
+  const approvals = (approvalsData || []).map(approval => {
+    const card = cardsData?.find(c => c.id === approval.cardRequestId);
+    return {
+      id: approval.id,
+      cardholderName: card?.cardholderName || "Unknown",
+      purpose: card?.purpose || "No purpose provided",
+      cardType: card?.isOneTimeUse ? "one-time" as const : "recurring" as const,
+      transactionCount: card?.isOneTimeUse ? "1" as const : "unlimited" as const,
+      spendLimit: card ? `$${parseFloat(card.spendLimit).toLocaleString()}` : "$0",
+      currency: card?.currency || "USD",
+      validFrom: card?.validFrom ? new Date(card.validFrom).toLocaleDateString() : undefined,
+      validUntil: card?.validUntil ? new Date(card.validUntil).toLocaleDateString() : undefined,
+      allowedMerchants: card?.allowedMerchants || [],
+      allowedMccCodes: card?.allowedMccCodes || [],
+      allowedCountries: card?.allowedCountries || [],
+      channelRestriction: card?.channelRestriction || "both",
+      glAccountTemplate: card?.glAccountTemplate || "",
+      departmentTemplate: card?.departmentTemplate || "",
+      costCenterTemplate: card?.costCenterTemplate || "",
+      requestedBy: card?.requestedBy || "Unknown",
+      requestDate: approval.createdAt ? new Date(approval.createdAt).toLocaleDateString() : "Unknown",
+      approvalLevel: approval.approvalLevel,
+      status: approval.status as "Pending" | "Approved" | "Rejected",
+      currentApprover: approval.approverRole,
+      cardId: card?.id,
+      approvalId: approval.id,
+    };
+  });
+
+  const filteredApprovals = approvals.filter((approval) => {
     const matchesSearch =
       approval.cardholderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       approval.purpose.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -117,6 +182,63 @@ export default function Approvals() {
       statusFilter === "all" || approval.status.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
+
+  const handleApprove = async (approval: any) => {
+    try {
+      // Update card status to Active
+      await updateCardMutation.mutateAsync({
+        cardId: approval.cardId,
+        status: "Active",
+        approvedBy: "Lisa Chen"
+      });
+
+      // Update approval status
+      await updateApprovalMutation.mutateAsync({
+        approvalId: approval.approvalId,
+        status: "Approved",
+        approvedAt: new Date().toISOString()
+      });
+
+      toast({
+        title: "Card approved",
+        description: `${approval.cardholderName}'s card request has been approved`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to approve card request",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReject = async (approval: any) => {
+    try {
+      // Update card status to Rejected
+      await updateCardMutation.mutateAsync({
+        cardId: approval.cardId,
+        status: "Rejected"
+      });
+
+      // Update approval status
+      await updateApprovalMutation.mutateAsync({
+        approvalId: approval.approvalId,
+        status: "Rejected",
+        approvedAt: new Date().toISOString()
+      });
+
+      toast({
+        title: "Card rejected",
+        description: `${approval.cardholderName}'s card request has been rejected`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reject card request",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="p-8 space-y-8">
@@ -151,17 +273,27 @@ export default function Approvals() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredApprovals.map((approval) => (
-          <ApprovalItem
-            key={approval.id}
-            {...approval}
-            onApprove={() => console.log(`Approve request: ${approval.id}`)}
-            onReject={() => console.log(`Reject request: ${approval.id}`)}
-            onViewDetails={() => setSelectedRequest(approval)}
-          />
-        ))}
-      </div>
+      {approvalsLoading ? (
+        <div className="text-center py-16">
+          <p className="text-sm text-muted-foreground">Loading approvals...</p>
+        </div>
+      ) : filteredApprovals.length === 0 ? (
+        <div className="text-center py-16">
+          <p className="text-sm text-muted-foreground">No approval requests found</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredApprovals.map((approval) => (
+            <ApprovalItem
+              key={approval.id}
+              {...approval}
+              onApprove={() => handleApprove(approval)}
+              onReject={() => handleReject(approval)}
+              onViewDetails={() => setSelectedRequest(approval)}
+            />
+          ))}
+        </div>
+      )}
 
       {selectedRequest && (
         <ApprovalDetailsDialog
@@ -169,12 +301,6 @@ export default function Approvals() {
           onOpenChange={(open) => !open && setSelectedRequest(null)}
           request={selectedRequest}
         />
-      )}
-
-      {filteredApprovals.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-sm text-muted-foreground">No approval requests found matching your criteria</p>
-        </div>
       )}
     </div>
   );
