@@ -108,15 +108,15 @@ export default function Invoices() {
   });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold">Invoices</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-xl font-medium">Invoices</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           View and pay invoices with virtual cards
         </p>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -152,7 +152,7 @@ export default function Invoices() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredInvoices.map((invoice) => (
           <InvoiceItem
             key={invoice.id}
@@ -163,8 +163,8 @@ export default function Invoices() {
       </div>
 
       {filteredInvoices.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No invoices found matching your criteria</p>
+        <div className="text-center py-16">
+          <p className="text-sm text-muted-foreground">No invoices found matching your criteria</p>
         </div>
       )}
     </div>
