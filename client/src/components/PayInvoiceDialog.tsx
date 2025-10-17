@@ -186,9 +186,9 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
         allowedMerchants,
         allowedCountries,
         invoiceId: invoice.id,
-        glAccount: invoice.glAccount || null,
-        department: invoice.department || null,
-        costCenter: invoice.costCenter || null,
+        glAccount: null,
+        department: null,
+        costCenter: null,
       };
       
       const newCard = await createCardMutation.mutateAsync(cardData);

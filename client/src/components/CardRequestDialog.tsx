@@ -122,7 +122,7 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
   const [renewalFrequency, setRenewalFrequency] = useState<"month" | "quarter" | "year">("month");
   
   // Duration
-  const [validFrom, setValidFrom] = useState("");
+  const [validFrom, setValidFrom] = useState(new Date().toISOString().split('T')[0]); // Default to today
   const [validUntil, setValidUntil] = useState("");
   
   // Restrictions
