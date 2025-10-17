@@ -57,7 +57,28 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
   const [department, setDepartment] = useState("");
   const [costCenter, setCostCenter] = useState("");
 
+  const isFormValid = () => {
+    // Basic section - required fields
+    if (!cardholderName.trim() || !purpose.trim() || !spendLimit.trim()) {
+      return false;
+    }
+    
+    // Limits section - required fields
+    if (isOneTimeUse && !transactionLimit.trim()) {
+      return false;
+    }
+    if (!validUntil.trim()) {
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSubmit = () => {
+    if (!isFormValid()) {
+      return;
+    }
+    
     const requestData = {
       cardholderName,
       purpose,
@@ -350,7 +371,7 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
           <Button variant="outline" onClick={() => setOpen(false)} data-testid="button-cancel">
             Cancel
           </Button>
-          <Button onClick={handleSubmit} data-testid="button-submit-request">
+          <Button onClick={handleSubmit} disabled={!isFormValid()} data-testid="button-submit-request">
             Submit for Approval
           </Button>
         </div>
