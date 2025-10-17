@@ -38,6 +38,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/invoices/:id", async (req, res) => {
     try {
+      const currentInvoice = await storage.getInvoice(req.params.id);
+      
+      // If invoice is locked to a card, enforce locking rules
+      if (currentInvoice?.lockedCardId) {
+        const lockedCard = await storage.getCard(currentInvoice.lockedCardId);
+        
+        // If card is still active (not suspended), block most updates
+        if (lockedCard && lockedCard.status !== "Suspended") {
+          // Allow only status updates (for automatic status derivation)
+          // Block all other changes including unlock attempts, payment method changes, etc.
+          const allowedFields = ['status'];
+          const updatingFields = Object.keys(req.body);
+          const blockedFields = updatingFields.filter(field => !allowedFields.includes(field));
+          
+          if (blockedFields.length > 0) {
+            return res.status(400).json({ 
+              error: `Cannot update invoice: it is locked to active card ${lockedCard.last4}. Suspend the card first.`,
+              blockedFields
+            });
+          }
+        }
+      }
+      
       const invoice = await storage.updateInvoice(req.params.id, req.body);
       res.json(invoice);
     } catch (error) {
@@ -109,6 +132,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const updateData = { ...req.body };
       
+      // If trying to suspend a card, check if it's locked to an invoice with non-zero spend
+      if (updateData.status === "Suspended") {
+        const currentCard = await storage.getCard(req.params.id);
+        if (currentCard) {
+          const invoices = await storage.getInvoices();
+          const lockedInvoice = invoices.find(inv => inv.lockedCardId === req.params.id);
+          
+          if (lockedInvoice && parseFloat(currentCard.currentSpend) > 0) {
+            return res.status(400).json({ 
+              error: "Cannot suspend card: it is locked to invoice " + lockedInvoice.invoiceNumber + " with non-zero spend" 
+            });
+          }
+        }
+      }
+      
       // If card is being approved (status changing to Active), generate dummy card details
       if (updateData.status === "Active") {
         // Generate dummy virtual card number (starts with 4571 for Visa virtual cards)
@@ -139,6 +177,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/cards/:id", async (req, res) => {
     try {
+      // Check if card is locked to any invoice
+      const invoices = await storage.getInvoices();
+      const lockedInvoice = invoices.find(inv => inv.lockedCardId === req.params.id);
+      
+      if (lockedInvoice) {
+        return res.status(400).json({ 
+          error: "Cannot delete card: it is locked to invoice " + lockedInvoice.invoiceNumber 
+        });
+      }
+      
       await storage.deleteCard(req.params.id);
       res.json({ success: true });
     } catch (error) {
@@ -463,6 +511,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validated = insertPaymentSchema.parse(req.body);
       const payment = await storage.createPayment(validated);
+      
+      // Automatically update invoice status based on payments
+      if (payment.invoiceId) {
+        await storage.updateInvoiceStatus(payment.invoiceId);
+      }
+      
       res.json(payment);
     } catch (error) {
       res.status(400).json({ error: "Invalid payment data" });
@@ -472,6 +526,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/payments/:id", async (req, res) => {
     try {
       const payment = await storage.updatePayment(req.params.id, req.body);
+      
+      // Automatically update invoice status based on payments
+      if (payment.invoiceId) {
+        await storage.updateInvoiceStatus(payment.invoiceId);
+      }
+      
       res.json(payment);
     } catch (error) {
       res.status(500).json({ error: "Failed to update payment" });
