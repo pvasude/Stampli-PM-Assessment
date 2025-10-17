@@ -170,18 +170,18 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Active": return "text-green-600 dark:text-green-500";
-      case "Locked": return "text-amber-600 dark:text-amber-500";
+      case "Active": return "text-foreground";
+      case "Locked": return "text-muted-foreground";
       case "Suspended": return "text-destructive";
-      case "Pending Approval": return "text-blue-600 dark:text-blue-500";
+      case "Pending Approval": return "text-muted-foreground";
       default: return "text-muted-foreground";
     }
   };
 
   const getTransactionStatusIcon = (status: string) => {
     switch (status) {
-      case "Completed": return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-      case "Pending": return <Clock className="h-4 w-4 text-amber-600" />;
+      case "Completed": return <CheckCircle2 className="h-4 w-4 text-muted-foreground" />;
+      case "Pending": return <Clock className="h-4 w-4 text-muted-foreground" />;
       case "Declined": return <XCircle className="h-4 w-4 text-destructive" />;
       default: return null;
     }

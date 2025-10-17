@@ -33,10 +33,10 @@ export function ApprovalItem({
   onReject,
   onViewDetails,
 }: ApprovalItemProps) {
-  const statusColors = {
-    Pending: "bg-chart-2 text-white",
-    Approved: "bg-chart-1 text-white",
-    Rejected: "bg-destructive text-destructive-foreground",
+  const statusVariants = {
+    Pending: "secondary" as const,
+    Approved: "outline" as const,
+    Rejected: "destructive" as const,
   };
 
   const getInitials = (name: string) => {
@@ -60,7 +60,7 @@ export function ApprovalItem({
               <h3 className="font-semibold" data-testid={`text-cardholder-${id}`}>
                 {cardholderName}
               </h3>
-              <Badge className={statusColors[status]} data-testid={`badge-status-${id}`}>
+              <Badge variant={statusVariants[status]} data-testid={`badge-status-${id}`}>
                 {status}
               </Badge>
             </div>

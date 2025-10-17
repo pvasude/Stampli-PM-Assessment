@@ -129,39 +129,31 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
               </AlertDescription>
             </Alert>
 
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {acceptsCards ? (
-                <Alert className="flex-1 border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-500" />
-                  <AlertDescription className="text-sm text-green-700 dark:text-green-400">
-                    Vendor accepts cards
-                  </AlertDescription>
-                </Alert>
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Vendor accepts cards</span>
+                </>
               ) : (
-                <Alert className="flex-1 border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
-                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                  <AlertDescription className="text-sm text-amber-700 dark:text-amber-400">
-                    Vendor may not accept cards
-                  </AlertDescription>
-                </Alert>
+                <>
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Vendor may not accept cards</span>
+                </>
               )}
             </div>
 
             {mcpAutomation === "available" && (
-              <Alert className="border-primary/20 bg-primary/5">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Sparkles className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  <strong>MCP/Visa Automation:</strong> Payment will be automatically processed via Visa Commercial Pay
-                </AlertDescription>
-              </Alert>
+                <span><strong>MCP/Visa Automation:</strong> Payment will be automatically processed</span>
+              </div>
             )}
             {mcpAutomation === "manual" && (
-              <Alert className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                <AlertDescription className="text-sm text-amber-700 dark:text-amber-400">
-                  <strong>Manual Sharing Required:</strong> You'll need to share card details with the vendor
-                </AlertDescription>
-              </Alert>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <AlertCircle className="h-4 w-4" />
+                <span><strong>Manual Sharing Required:</strong> You'll need to share card details</span>
+              </div>
             )}
             
             <div className="space-y-2">

@@ -25,11 +25,11 @@ export function InvoiceItem({
   description,
   onViewDetails,
 }: InvoiceItemProps) {
-  const statusColors = {
-    Pending: "bg-chart-2 text-white",
-    Paid: "bg-chart-1 text-white",
-    Overdue: "bg-destructive text-destructive-foreground",
-    Approved: "bg-chart-3 text-white",
+  const statusVariants = {
+    Pending: "secondary" as const,
+    Paid: "outline" as const,
+    Overdue: "destructive" as const,
+    Approved: "outline" as const,
   };
 
   return (
@@ -42,7 +42,7 @@ export function InvoiceItem({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-semibold" data-testid={`text-invoice-number-${id}`}>{invoiceNumber}</h3>
-              <Badge className={statusColors[status]} data-testid={`badge-status-${id}`}>
+              <Badge variant={statusVariants[status]} data-testid={`badge-status-${id}`}>
                 {status}
               </Badge>
             </div>

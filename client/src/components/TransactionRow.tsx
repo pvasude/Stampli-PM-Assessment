@@ -42,11 +42,11 @@ export function TransactionRow({
   const [localGL, setLocalGL] = useState(glAccount);
   const [localCostCenter, setLocalCostCenter] = useState(costCenter);
 
-  const statusColors = {
-    "Coded": "bg-chart-1 text-white",
-    "Pending Receipt": "bg-chart-2 text-white",
-    "Ready to Sync": "bg-chart-3 text-white",
-    "Synced": "bg-secondary text-secondary-foreground",
+  const statusVariants = {
+    "Coded": "outline" as const,
+    "Pending Receipt": "secondary" as const,
+    "Ready to Sync": "outline" as const,
+    "Synced": "secondary" as const,
   };
 
   return (
@@ -56,7 +56,7 @@ export function TransactionRow({
       <td className="p-3 text-sm font-mono font-medium" data-testid={`text-amount-${id}`}>{amount}</td>
       <td className="p-3 text-sm text-muted-foreground">{cardholder}</td>
       <td className="p-3">
-        <Badge className={statusColors[status]} data-testid={`badge-status-${id}`}>
+        <Badge variant={statusVariants[status]} data-testid={`badge-status-${id}`}>
           {status}
         </Badge>
       </td>
@@ -93,7 +93,7 @@ export function TransactionRow({
       </td>
       <td className="p-3">
         {hasReceipt ? (
-          <Check className="h-4 w-4 text-chart-1" data-testid={`icon-receipt-uploaded-${id}`} />
+          <Check className="h-4 w-4 text-muted-foreground" data-testid={`icon-receipt-uploaded-${id}`} />
         ) : status === "Pending Receipt" ? (
           <Button 
             variant="ghost" 
