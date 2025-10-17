@@ -1,86 +1,268 @@
 import { StatsCard } from "@/components/StatsCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, DollarSign, CreditCard, TrendingUp, Download, FileText, Repeat } from "lucide-react";
+import { BarChart3, DollarSign, CreditCard, TrendingUp, Download, FileText, Repeat, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
-// TODO: remove mock functionality
-const mockStats = [
-  {
-    title: "Total Spend (MTD)",
-    value: "$24,350",
-    subtitle: "Month to Date",
-    icon: DollarSign,
-    trend: { value: "12% vs last month", isPositive: true },
-  },
-  {
-    title: "Total Cashback Earned",
-    value: "$54.75",
-    subtitle: "This month",
-    icon: TrendingUp,
-    trend: { value: "1% average rate", isPositive: true },
-  },
-  {
-    title: "Card Utilization",
-    value: "68%",
-    subtitle: "$24,350 of $35,800 limit",
-    icon: CreditCard,
-  },
-  {
-    title: "Cards Issued",
-    value: "12",
-    subtitle: "This month",
-    icon: BarChart3,
-  },
-];
+type Transaction = {
+  id: string;
+  cardId: string;
+  merchantName: string;
+  amount: string;
+  transactionDate: string;
+  status: string;
+  glAccount?: string;
+  costCenter?: string;
+  description?: string;
+};
 
-const apStats = [
-  {
-    title: "Invoices Paid",
-    value: "47",
-    subtitle: "This month",
-    icon: FileText,
-    trend: { value: "8 more than last month", isPositive: true },
-  },
-  {
-    title: "AP Spend Total",
-    value: "$156,420",
-    subtitle: "All payment methods",
-    icon: DollarSign,
-    trend: { value: "18% vs last month", isPositive: true },
-  },
-  {
-    title: "Card Payment %",
-    value: "64%",
-    subtitle: "$100,109 paid via cards",
-    icon: CreditCard,
-  },
-  {
-    title: "Avg. Payment Time",
-    value: "18 days",
-    subtitle: "From invoice to payment",
-    icon: Repeat,
-    trend: { value: "3 days faster", isPositive: true },
-  },
-];
+type Card = {
+  id: string;
+  cardholderName: string;
+  spendLimit: string;
+  currentSpend: string;
+  status: string;
+  createdAt: string;
+  cardType: string;
+};
 
-const spendByCategory = [
-  { category: "Software & SaaS", amount: "$8,450", percentage: 35 },
-  { category: "Office Supplies", amount: "$6,200", percentage: 25 },
-  { category: "Travel & Entertainment", amount: "$5,100", percentage: 21 },
-  { category: "Marketing", amount: "$3,200", percentage: 13 },
-  { category: "Other", amount: "$1,400", percentage: 6 },
-];
+type Invoice = {
+  id: string;
+  invoiceNumber: string;
+  vendorName: string;
+  amount: string;
+  dueDate: string;
+  status: string;
+  createdAt: string;
+};
 
-const topVendors = [
-  { vendor: "Amazon Web Services", amount: "$3,850", transactions: 8 },
-  { vendor: "LinkedIn Ads", amount: "$2,500", transactions: 3 },
-  { vendor: "Acme Office Supplies", amount: "$2,245", transactions: 5 },
-  { vendor: "Delta Airlines", amount: "$1,680", transactions: 4 },
-  { vendor: "Zoom Video", amount: "$1,199", transactions: 2 },
-];
+type Payment = {
+  id: string;
+  invoiceId: string;
+  amount: string;
+  paymentMethod: string;
+  transactionDate: string;
+};
 
 export default function Reports() {
+  const { data: transactions = [], isLoading: loadingTransactions } = useQuery<Transaction[]>({
+    queryKey: ['/api/transactions'],
+  });
+
+  const { data: cards = [], isLoading: loadingCards } = useQuery<Card[]>({
+    queryKey: ['/api/cards'],
+  });
+
+  const { data: invoices = [], isLoading: loadingInvoices } = useQuery<Invoice[]>({
+    queryKey: ['/api/invoices'],
+  });
+
+  const { data: payments = [], isLoading: loadingPayments } = useQuery<Payment[]>({
+    queryKey: ['/api/payments'],
+  });
+
+  const isLoading = loadingTransactions || loadingCards || loadingInvoices || loadingPayments;
+
+  const stats = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Filter transactions for this month
+    const thisMonthTransactions = transactions.filter(t => 
+      new Date(t.transactionDate) >= monthStart
+    );
+    
+    // Calculate total spend MTD
+    const totalSpendMTD = thisMonthTransactions.reduce((sum, t) => 
+      sum + parseFloat(t.amount.replace(/[$,]/g, '')), 0
+    );
+    
+    // Calculate total cashback (1% of spend)
+    const totalCashback = totalSpendMTD * 0.01;
+    
+    // Calculate card utilization
+    const totalLimit = cards.reduce((sum, c) => 
+      sum + parseFloat(c.spendLimit.replace(/[$,]/g, '')), 0
+    );
+    const totalSpend = cards.reduce((sum, c) => 
+      sum + parseFloat(c.currentSpend.replace(/[$,]/g, '')), 0
+    );
+    const utilization = totalLimit > 0 ? Math.round((totalSpend / totalLimit) * 100) : 0;
+    
+    // Count cards issued this month
+    const cardsIssuedMTD = cards.filter(c => 
+      new Date(c.createdAt) >= monthStart
+    ).length;
+
+    return {
+      mockStats: [
+        {
+          title: "Total Spend (MTD)",
+          value: `$${totalSpendMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          subtitle: "Month to Date",
+          icon: DollarSign,
+        },
+        {
+          title: "Total Cashback Earned",
+          value: `$${totalCashback.toFixed(2)}`,
+          subtitle: "This month",
+          icon: TrendingUp,
+          trend: { value: "1% average rate", isPositive: true },
+        },
+        {
+          title: "Card Utilization",
+          value: `${utilization}%`,
+          subtitle: `$${totalSpend.toLocaleString('en-US', { minimumFractionDigits: 2 })} of $${totalLimit.toLocaleString('en-US', { minimumFractionDigits: 2 })} limit`,
+          icon: CreditCard,
+        },
+        {
+          title: "Cards Issued",
+          value: cardsIssuedMTD.toString(),
+          subtitle: "This month",
+          icon: BarChart3,
+        },
+      ]
+    };
+  }, [transactions, cards]);
+
+  const apMetrics = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Filter invoices and payments for this month
+    const thisMonthPayments = payments.filter(p => 
+      new Date(p.transactionDate) >= monthStart
+    );
+    
+    // Count paid invoices this month
+    const paidInvoicesMTD = thisMonthPayments.length;
+    
+    // Calculate total AP spend
+    const totalAPSpend = thisMonthPayments.reduce((sum, p) => 
+      sum + parseFloat(p.amount.replace(/[$,]/g, '')), 0
+    );
+    
+    // Calculate card payment percentage
+    const cardPayments = thisMonthPayments.filter(p => p.paymentMethod === 'card');
+    const cardPaymentTotal = cardPayments.reduce((sum, p) => 
+      sum + parseFloat(p.amount.replace(/[$,]/g, '')), 0
+    );
+    const cardPaymentPct = totalAPSpend > 0 ? Math.round((cardPaymentTotal / totalAPSpend) * 100) : 0;
+
+    return {
+      apStats: [
+        {
+          title: "Invoices Paid",
+          value: paidInvoicesMTD.toString(),
+          subtitle: "This month",
+          icon: FileText,
+        },
+        {
+          title: "AP Spend Total",
+          value: `$${totalAPSpend.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          subtitle: "All payment methods",
+          icon: DollarSign,
+        },
+        {
+          title: "Card Payment %",
+          value: `${cardPaymentPct}%`,
+          subtitle: `$${cardPaymentTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })} paid via cards`,
+          icon: CreditCard,
+        },
+        {
+          title: "Avg. Payment Time",
+          value: "N/A",
+          subtitle: "From invoice to payment",
+          icon: Repeat,
+        },
+      ]
+    };
+  }, [payments]);
+
+  const categoryBreakdown = useMemo(() => {
+    const categoryMap = new Map<string, number>();
+    
+    transactions.forEach(t => {
+      const category = t.glAccount || "Other";
+      const amount = parseFloat(t.amount.replace(/[$,]/g, ''));
+      categoryMap.set(category, (categoryMap.get(category) || 0) + amount);
+    });
+    
+    const total = Array.from(categoryMap.values()).reduce((sum, val) => sum + val, 0);
+    
+    return Array.from(categoryMap.entries())
+      .map(([category, amount]) => ({
+        category,
+        amount: `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        percentage: total > 0 ? Math.round((amount / total) * 100) : 0
+      }))
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 5);
+  }, [transactions]);
+
+  const vendorBreakdown = useMemo(() => {
+    const vendorMap = new Map<string, { amount: number; count: number }>();
+    
+    transactions.forEach(t => {
+      const vendor = t.merchantName;
+      const amount = parseFloat(t.amount.replace(/[$,]/g, ''));
+      const existing = vendorMap.get(vendor) || { amount: 0, count: 0 };
+      vendorMap.set(vendor, {
+        amount: existing.amount + amount,
+        count: existing.count + 1
+      });
+    });
+    
+    return Array.from(vendorMap.entries())
+      .map(([vendor, data]) => ({
+        vendor,
+        amount: `$${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        transactions: data.count
+      }))
+      .sort((a, b) => {
+        const aAmount = parseFloat(a.amount.replace(/[$,]/g, ''));
+        const bAmount = parseFloat(b.amount.replace(/[$,]/g, ''));
+        return bAmount - aAmount;
+      })
+      .slice(0, 5);
+  }, [transactions]);
+
+  const monthlyTrend = useMemo(() => {
+    const now = new Date();
+    const months = [];
+    
+    for (let i = 2; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      
+      const monthTransactions = transactions.filter(t => {
+        const tDate = new Date(t.transactionDate);
+        return tDate >= monthStart && tDate <= monthEnd;
+      });
+      
+      const amount = monthTransactions.reduce((sum, t) => 
+        sum + parseFloat(t.amount.replace(/[$,]/g, '')), 0
+      );
+      
+      months.push({
+        month: date.toLocaleString('en-US', { month: 'short' }),
+        amount: Math.round(amount)
+      });
+    }
+    
+    return months;
+  }, [transactions]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -99,7 +281,7 @@ export default function Reports() {
       <div>
         <h2 className="text-lg font-semibold mb-3">Card Metrics</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {mockStats.map((stat, index) => (
+          {stats.mockStats.map((stat, index) => (
             <StatsCard key={index} {...stat} />
           ))}
         </div>
@@ -108,7 +290,7 @@ export default function Reports() {
       <div>
         <h2 className="text-lg font-semibold mb-3">AP Metrics</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {apStats.map((stat, index) => (
+          {apMetrics.apStats.map((stat, index) => (
             <StatsCard key={index} {...stat} />
           ))}
         </div>
@@ -120,25 +302,31 @@ export default function Reports() {
             <CardTitle>Spend by Category</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {spendByCategory.map((item, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">{item.category}</span>
-                  <span className="text-sm font-mono font-medium">{item.amount}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-secondary rounded-full h-2">
-                    <div
-                      className="bg-primary h-2 rounded-full"
-                      style={{ width: `${item.percentage}%` }}
-                    />
+            {categoryBreakdown.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No transaction data available</p>
+            ) : (
+              <>
+                {categoryBreakdown.map((item, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">{item.category}</span>
+                      <span className="text-sm font-mono font-medium">{item.amount}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-secondary rounded-full h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full"
+                          style={{ width: `${item.percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground w-10 text-right">
+                        {item.percentage}%
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-xs text-muted-foreground w-10 text-right">
-                    {item.percentage}%
-                  </span>
-                </div>
-              </div>
-            ))}
+                ))}
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -147,21 +335,25 @@ export default function Reports() {
             <CardTitle>Top Vendors</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {topVendors.map((vendor, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{vendor.vendor}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {vendor.transactions} transactions
-                    </p>
+            {vendorBreakdown.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No transaction data available</p>
+            ) : (
+              <div className="space-y-4">
+                {vendorBreakdown.map((vendor, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{vendor.vendor}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {vendor.transactions} transactions
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="font-mono">
+                      {vendor.amount}
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className="font-mono">
-                    {vendor.amount}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -172,12 +364,8 @@ export default function Reports() {
         </CardHeader>
         <CardContent>
           <div className="h-64 flex items-end justify-around gap-4 px-4">
-            {[
-              { month: "Jan", amount: 18500 },
-              { month: "Feb", amount: 21200 },
-              { month: "Mar", amount: 24350 },
-            ].map((data, index) => {
-              const maxAmount = 25000;
+            {monthlyTrend.map((data, index) => {
+              const maxAmount = Math.max(...monthlyTrend.map(m => m.amount), 1000);
               const heightPercentage = (data.amount / maxAmount) * 100;
               const barHeight = `${heightPercentage}%`;
               return (
