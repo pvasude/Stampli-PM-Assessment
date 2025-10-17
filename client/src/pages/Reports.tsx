@@ -236,11 +236,11 @@ export default function Reports() {
     for (let i = 2; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      const nextMonthStart = new Date(date.getFullYear(), date.getMonth() + 1, 1);
       
       const monthTransactions = transactions.filter(t => {
         const tDate = new Date(t.transactionDate);
-        return tDate >= monthStart && tDate <= monthEnd;
+        return tDate >= monthStart && tDate < nextMonthStart;
       });
       
       const amount = monthTransactions.reduce((sum, t) => 

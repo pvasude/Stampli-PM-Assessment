@@ -163,6 +163,8 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   // Card generation fields - pre-populated from invoice
   const [cardholderName, setCardholderName] = useState("");
   const [vendorEmail, setVendorEmail] = useState("");
+  const [achPaymentSource, setAchPaymentSource] = useState<"wallet" | "bank">("wallet");
+  const [checkPaymentSource, setCheckPaymentSource] = useState<"wallet" | "bank">("wallet");
   // Default to 30 days from now in yyyy-MM-dd format
   const [validUntil, setValidUntil] = useState(() => {
     const date = new Date();
@@ -342,18 +344,52 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
 
   const handlePayWithACH = async () => {
     try {
-      // Mark invoice as paid with ACH
+      const amount = parseFloat(invoice.amount.replace(/[$,]/g, ''));
+      
+      // If paying from wallet, deduct from wallet balance
+      if (achPaymentSource === "wallet") {
+        const walletResponse = await fetch('/api/wallet');
+        const wallet = await walletResponse.json();
+        const currentBalance = parseFloat(wallet.balance.replace(/[$,]/g, ''));
+        
+        if (currentBalance < amount) {
+          toast({
+            title: "Insufficient wallet balance",
+            description: `Wallet has $${currentBalance.toFixed(2)}, but invoice is $${amount.toFixed(2)}`,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Deduct from wallet
+        await apiRequest('POST', '/api/wallet/add-funds', {
+          amount: -amount
+        });
+      }
+      
+      // Record payment
+      await apiRequest('POST', '/api/payments', {
+        invoiceId: invoice.id,
+        amount: invoice.amount,
+        paymentMethod: achPaymentSource === "wallet" ? "ach-wallet" : "ach-bank",
+        transactionDate: new Date().toISOString(),
+      });
+      
+      // Mark invoice as paid
       await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
-        status: "Paid",
-        paymentMethod: "ACH Transfer",
+        status: "Paid"
       });
       
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/payments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
       
-      onPay?.("ach", { invoiceId: invoice.id });
+      onPay?.("ach", { invoiceId: invoice.id, source: achPaymentSource });
       toast({
         title: "Invoice paid with ACH",
-        description: `ACH payment processed for ${invoice.invoiceNumber}`,
+        description: achPaymentSource === "wallet" 
+          ? `ACH payment processed for ${invoice.invoiceNumber} from wallet`
+          : `ACH payment processed for ${invoice.invoiceNumber} from bank account`,
       });
       setOpen(false);
     } catch (error) {
@@ -367,18 +403,52 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
 
   const handlePayWithCheck = async () => {
     try {
-      // Mark invoice as paid with Check
+      const amount = parseFloat(invoice.amount.replace(/[$,]/g, ''));
+      
+      // If paying from wallet, deduct from wallet balance
+      if (checkPaymentSource === "wallet") {
+        const walletResponse = await fetch('/api/wallet');
+        const wallet = await walletResponse.json();
+        const currentBalance = parseFloat(wallet.balance.replace(/[$,]/g, ''));
+        
+        if (currentBalance < amount) {
+          toast({
+            title: "Insufficient wallet balance",
+            description: `Wallet has $${currentBalance.toFixed(2)}, but invoice is $${amount.toFixed(2)}`,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Deduct from wallet
+        await apiRequest('POST', '/api/wallet/add-funds', {
+          amount: -amount
+        });
+      }
+      
+      // Record payment
+      await apiRequest('POST', '/api/payments', {
+        invoiceId: invoice.id,
+        amount: invoice.amount,
+        paymentMethod: checkPaymentSource === "wallet" ? "check-wallet" : "check-bank",
+        transactionDate: new Date().toISOString(),
+      });
+      
+      // Mark invoice as paid
       await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
-        status: "Paid",
-        paymentMethod: "Check",
+        status: "Paid"
       });
       
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/payments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
       
-      onPay?.("check", { invoiceId: invoice.id });
+      onPay?.("check", { invoiceId: invoice.id, source: checkPaymentSource });
       toast({
         title: "Invoice paid with Check",
-        description: `Check issued for ${invoice.invoiceNumber}`,
+        description: checkPaymentSource === "wallet" 
+          ? `Check issued for ${invoice.invoiceNumber} from wallet`
+          : `Check issued for ${invoice.invoiceNumber} from bank account`,
       });
       setOpen(false);
     } catch (error) {
@@ -882,10 +952,35 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
             </TabsContent>
             
             <TabsContent value="ach" className="space-y-4 mt-4">
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  ACH payment will be processed through your bank account
-                </p>
+              <div className="space-y-3">
+                <Label>Payment Source</Label>
+                <RadioGroup value={achPaymentSource} onValueChange={(value: "wallet" | "bank") => setAchPaymentSource(value)}>
+                  <div className="flex items-start space-x-3 p-3 border rounded-lg hover-elevate cursor-pointer" onClick={() => setAchPaymentSource("wallet")}>
+                    <RadioGroupItem value="wallet" id="ach-wallet" data-testid="radio-ach-wallet" />
+                    <div className="flex-1">
+                      <Label htmlFor="ach-wallet" className="cursor-pointer flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-primary" />
+                        <span className="font-medium">Company Wallet</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Deduct from wallet balance - Instant processing
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 p-3 border rounded-lg hover-elevate cursor-pointer" onClick={() => setAchPaymentSource("bank")}>
+                    <RadioGroupItem value="bank" id="ach-bank" data-testid="radio-ach-bank" />
+                    <div className="flex-1">
+                      <Label htmlFor="ach-bank" className="cursor-pointer flex items-center gap-2">
+                        <Building className="h-4 w-4 text-primary" />
+                        <span className="font-medium">Bank Account</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Direct transfer from bank - 2-3 business days
+                      </p>
+                    </div>
+                  </div>
+                </RadioGroup>
               </div>
               <Button onClick={handlePayWithACH} className="w-full" data-testid="button-pay-ach">
                 Process ACH Payment
@@ -893,10 +988,35 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
             </TabsContent>
             
             <TabsContent value="check" className="space-y-4 mt-4">
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  A physical check will be issued for this payment
-                </p>
+              <div className="space-y-3">
+                <Label>Payment Source</Label>
+                <RadioGroup value={checkPaymentSource} onValueChange={(value: "wallet" | "bank") => setCheckPaymentSource(value)}>
+                  <div className="flex items-start space-x-3 p-3 border rounded-lg hover-elevate cursor-pointer" onClick={() => setCheckPaymentSource("wallet")}>
+                    <RadioGroupItem value="wallet" id="check-wallet" data-testid="radio-check-wallet" />
+                    <div className="flex-1">
+                      <Label htmlFor="check-wallet" className="cursor-pointer flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-primary" />
+                        <span className="font-medium">Company Wallet</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Deduct from wallet balance - Check issued immediately
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 p-3 border rounded-lg hover-elevate cursor-pointer" onClick={() => setCheckPaymentSource("bank")}>
+                    <RadioGroupItem value="bank" id="check-bank" data-testid="radio-check-bank" />
+                    <div className="flex-1">
+                      <Label htmlFor="check-bank" className="cursor-pointer flex items-center gap-2">
+                        <Building className="h-4 w-4 text-primary" />
+                        <span className="font-medium">Bank Account</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Direct check from bank account - Standard processing
+                      </p>
+                    </div>
+                  </div>
+                </RadioGroup>
               </div>
               <Button onClick={handlePayWithCheck} className="w-full" data-testid="button-pay-check">
                 Issue Check
