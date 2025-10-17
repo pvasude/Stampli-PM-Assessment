@@ -71,6 +71,7 @@ interface CardDetailSheetProps {
     glAccountTemplate?: string;
     departmentTemplate?: string;
     costCenterTemplate?: string;
+    invoiceId?: string;
   };
 }
 
@@ -122,7 +123,16 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showLockDialog, setShowLockDialog] = useState(false);
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editedSpendLimit, setEditedSpendLimit] = useState(card.spendLimit);
+  const [editedAllowedMerchants, setEditedAllowedMerchants] = useState<string[]>(card.allowedMerchants || []);
+  const [editedAllowedMccCodes, setEditedAllowedMccCodes] = useState<string[]>(card.allowedMccCodes || []);
+  const [editedGlAccount, setEditedGlAccount] = useState(card.glAccountTemplate || "");
+  const [editedDepartment, setEditedDepartment] = useState(card.departmentTemplate || "");
+  const [editedCostCenter, setEditedCostCenter] = useState(card.costCenterTemplate || "");
   const { toast } = useToast();
+  
+  const isInvoiceLinked = !!card.invoiceId;
 
   const completedTransactions = mockTransactions.filter(t => t.status === "Completed" || t.status === "Pending");
   const declinedTransactions = mockTransactions.filter(t => t.status === "Declined");
@@ -172,6 +182,24 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
     setShowSuspendDialog(false);
   };
 
+  const handleSubmitChanges = () => {
+    const changes = {
+      spendLimit: editedSpendLimit,
+      allowedMerchants: editedAllowedMerchants,
+      allowedMccCodes: editedAllowedMccCodes,
+      glAccountTemplate: editedGlAccount,
+      departmentTemplate: editedDepartment,
+      costCenterTemplate: editedCostCenter,
+    };
+    
+    console.log("Submitting card changes for approval:", changes);
+    toast({
+      title: "Changes submitted for approval",
+      description: "Card modifications will be applied once approved",
+    });
+    setEditMode(false);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Active": return "text-foreground";
@@ -217,7 +245,17 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                       : (card.renewalFrequency === "month" ? "Monthly Reset" : 
                          card.renewalFrequency === "quarter" ? "Quarterly Reset" : "Yearly Reset")}
                   </span>
+                  {isInvoiceLinked && (
+                    <Badge variant="outline" className="text-xs" data-testid="badge-invoice-linked">
+                      Invoice-Linked
+                    </Badge>
+                  )}
                 </div>
+                {isInvoiceLinked && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    This card is linked to an invoice and cannot be edited.
+                  </p>
+                )}
               </div>
               <div className="text-right">
                 <p className={`text-sm font-medium ${getStatusColor(card.status)}`}>
@@ -228,7 +266,7 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
               </div>
             </div>
 
-            {card.status !== "Pending Approval" && (
+            {card.status !== "Pending Approval" && card.status !== "Suspended" && (
               <div className="flex gap-2 flex-wrap">
                 {card.status === "Active" && (
                   <>
@@ -274,10 +312,18 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                 </Button>
               </div>
             )}
+            {card.status === "Suspended" && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive">
+                  This card has been permanently suspended and cannot be modified or shared.
+                </p>
+              </div>
+            )}
 
             <Tabs defaultValue="controls" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="controls" data-testid="tab-controls">Controls</TabsTrigger>
+                <TabsTrigger value="manage" data-testid="tab-manage">Manage Card</TabsTrigger>
                 <TabsTrigger value="transactions" data-testid="tab-transactions">
                   Transactions ({completedTransactions.length})
                 </TabsTrigger>
@@ -416,6 +462,120 @@ export function CardDetailSheet({ open, onOpenChange, card }: CardDetailSheetPro
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="manage" className="space-y-4 mt-4">
+                {isInvoiceLinked ? (
+                  <div className="p-4 bg-muted/50 border rounded-md">
+                    <p className="text-sm text-muted-foreground">
+                      This card is linked to an invoice and cannot be edited.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-spend-limit">Spend Limit</Label>
+                        <Input
+                          id="edit-spend-limit"
+                          type="number"
+                          value={editedSpendLimit.replace(/[$,]/g, '')}
+                          onChange={(e) => setEditedSpendLimit(`$${e.target.value}`)}
+                          disabled={!editMode}
+                          data-testid="input-edit-spend-limit"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Allowed Merchants</Label>
+                        <Input
+                          value={editedAllowedMerchants.join(', ')}
+                          onChange={(e) => setEditedAllowedMerchants(e.target.value.split(',').map(m => m.trim()).filter(Boolean))}
+                          disabled={!editMode}
+                          placeholder="Comma-separated merchant names"
+                          data-testid="input-edit-merchants"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Allowed MCC Codes</Label>
+                        <Input
+                          value={editedAllowedMccCodes.join(', ')}
+                          onChange={(e) => setEditedAllowedMccCodes(e.target.value.split(',').map(m => m.trim()).filter(Boolean))}
+                          disabled={!editMode}
+                          placeholder="Comma-separated MCC codes"
+                          data-testid="input-edit-mcc"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-gl">GL Account</Label>
+                        <Input
+                          id="edit-gl"
+                          value={editedGlAccount}
+                          onChange={(e) => setEditedGlAccount(e.target.value)}
+                          disabled={!editMode}
+                          data-testid="input-edit-gl"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-dept">Department</Label>
+                        <Input
+                          id="edit-dept"
+                          value={editedDepartment}
+                          onChange={(e) => setEditedDepartment(e.target.value)}
+                          disabled={!editMode}
+                          data-testid="input-edit-department"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-cost">Cost Center</Label>
+                        <Input
+                          id="edit-cost"
+                          value={editedCostCenter}
+                          onChange={(e) => setEditedCostCenter(e.target.value)}
+                          disabled={!editMode}
+                          data-testid="input-edit-cost-center"
+                        />
+                      </div>
+
+                      <div className="flex gap-2 pt-4">
+                        {!editMode ? (
+                          <Button onClick={() => setEditMode(true)} data-testid="button-enable-edit">
+                            Edit Card Settings
+                          </Button>
+                        ) : (
+                          <>
+                            <Button onClick={handleSubmitChanges} data-testid="button-submit-changes">
+                              Submit for Approval
+                            </Button>
+                            <Button variant="outline" onClick={() => {
+                              setEditMode(false);
+                              setEditedSpendLimit(card.spendLimit);
+                              setEditedAllowedMerchants(card.allowedMerchants || []);
+                              setEditedAllowedMccCodes(card.allowedMccCodes || []);
+                              setEditedGlAccount(card.glAccountTemplate || "");
+                              setEditedDepartment(card.departmentTemplate || "");
+                              setEditedCostCenter(card.costCenterTemplate || "");
+                            }} data-testid="button-cancel-edit">
+                              Cancel
+                            </Button>
+                          </>
+                        )}
+                      </div>
+
+                      {!editMode && (
+                        <div className="p-3 bg-muted/50 border rounded-md">
+                          <p className="text-sm text-muted-foreground">
+                            Changes to card settings require approval before taking effect.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="transactions" className="space-y-3 mt-4">
