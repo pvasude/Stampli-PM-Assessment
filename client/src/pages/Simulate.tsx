@@ -90,11 +90,12 @@ export default function Simulate() {
   const [approvalStatus, setApprovalStatus] = useState("Pending");
   const [approverName, setApproverName] = useState("");
 
-  // Calculate payment totals
+  // Calculate payment totals with proper decimal precision
   const paymentTotal = useMemo(() => {
     return payments.reduce((sum, payment) => {
       const amount = parseFloat(payment.amount) || 0;
-      return sum + amount;
+      // Round each amount to 2 decimals to avoid floating point errors
+      return Math.round((sum + amount) * 100) / 100;
     }, 0);
   }, [payments]);
 
@@ -266,12 +267,12 @@ export default function Simulate() {
 
     simulateInvoiceMutation.mutate({
       vendorName,
-      amount: parseFloat(invoiceAmount),
+      amount: Math.round(parseFloat(invoiceAmount) * 100) / 100,
       description: description || `Simulated invoice for ${vendorName}`,
       status: approvalStatus,
       approverName: approvalStatus === "Approved" ? approverName : undefined,
       payments: payments.map(p => ({
-        amount: parseFloat(p.amount),
+        amount: Math.round(parseFloat(p.amount) * 100) / 100,
         dueDate: p.dueDate,
         glAccount: glAccount || undefined,
         department: department || undefined,
