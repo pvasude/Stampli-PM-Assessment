@@ -12,6 +12,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 17, 2025 - UI/UX Cleanup (Feature Visibility):**
+- Moved Simulate feature from side navigation to Dashboard header button
+- Added "Testing Only" label and flask icon to Simulate button for clarity
+- Greyed out "View Invoices" button on Dashboard with tooltip "Feature not implemented in this demo"
+- Removed Simulate from main navigation menu to emphasize it's a testing tool, not a product feature
+
 **October 17, 2025 - Critical Security Fix (Card Data Protection):**
 - Removed sensitive card data from database schema (full PAN and CVV)
 - Cards table now stores only last4 digits and expiryDate for display purposes
