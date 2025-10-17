@@ -161,11 +161,11 @@ export default function Transactions() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="p-8 space-y-8">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold">Transactions</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-xl font-medium">Transactions</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Track card transactions and invoice payments - code and sync to ERP
           </p>
         </div>
@@ -179,7 +179,7 @@ export default function Transactions() {
         </Button>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -223,23 +223,23 @@ export default function Transactions() {
         </Select>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="rounded-lg overflow-hidden bg-card">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr className="border-b">
-                <th className="p-3 text-left text-sm font-medium">Type</th>
-                <th className="p-3 text-left text-sm font-medium">Date</th>
-                <th className="p-3 text-left text-sm font-medium">Vendor</th>
-                <th className="p-3 text-left text-sm font-medium">Amount</th>
-                <th className="p-3 text-left text-sm font-medium">Cashback</th>
-                <th className="p-3 text-left text-sm font-medium">Info</th>
-                <th className="p-3 text-left text-sm font-medium">Status</th>
-                <th className="p-3 text-left text-sm font-medium">GL Account</th>
-                <th className="p-3 text-left text-sm font-medium">Department</th>
-                <th className="p-3 text-left text-sm font-medium">Cost Center</th>
-                <th className="p-3 text-left text-sm font-medium">Receipt</th>
-                <th className="p-3 text-left text-sm font-medium">Actions</th>
+            <thead>
+              <tr className="border-b bg-muted/30">
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Type</th>
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Date</th>
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Vendor</th>
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Amount</th>
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Cashback</th>
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Info</th>
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Status</th>
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">GL Account</th>
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Department</th>
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Cost Center</th>
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Receipt</th>
+                <th className="p-4 text-left text-sm font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -266,8 +266,8 @@ export default function Transactions() {
       </div>
 
       {filteredTransactions.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No transactions found matching your criteria</p>
+        <div className="text-center py-16">
+          <p className="text-sm text-muted-foreground">No transactions found matching your criteria</p>
         </div>
       )}
 

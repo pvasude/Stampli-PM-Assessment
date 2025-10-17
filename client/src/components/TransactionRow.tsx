@@ -86,19 +86,19 @@ export function TransactionRow({
   };
 
   return (
-    <tr className="border-b hover:bg-accent/50" data-testid={`transaction-row-${id}`}>
-      <td className="p-3">
+    <tr className="border-b hover:bg-muted/30" data-testid={`transaction-row-${id}`}>
+      <td className="p-4">
         {type === "card" ? (
           <CreditCard className="h-4 w-4 text-primary" data-testid={`icon-type-card-${id}`} />
         ) : (
           <FileText className="h-4 w-4 text-muted-foreground" data-testid={`icon-type-ap-${id}`} />
         )}
       </td>
-      <td className="p-3 text-sm" data-testid={`text-date-${id}`}>{date}</td>
-      <td className="p-3 text-sm" data-testid={`text-vendor-${id}`}>{vendor}</td>
-      <td className="p-3 text-sm font-mono font-medium" data-testid={`text-amount-${id}`}>{amount}</td>
-      <td className="p-3 text-sm font-mono text-muted-foreground" data-testid={`text-cashback-${id}`}>{cashback || "-"}</td>
-      <td className="p-3 text-sm text-muted-foreground">
+      <td className="p-4 text-sm text-muted-foreground" data-testid={`text-date-${id}`}>{date}</td>
+      <td className="p-4 text-sm" data-testid={`text-vendor-${id}`}>{vendor}</td>
+      <td className="p-4 text-sm font-mono" data-testid={`text-amount-${id}`}>{amount}</td>
+      <td className="p-4 text-sm font-mono text-muted-foreground" data-testid={`text-cashback-${id}`}>{cashback || "-"}</td>
+      <td className="p-4 text-sm text-muted-foreground">
         {type === "card" ? cardholder : 
          type === "ap" ? (
            <div className="flex flex-col gap-0.5">
@@ -107,9 +107,9 @@ export function TransactionRow({
            </div>
          ) : "-"}
       </td>
-      <td className="p-3">
+      <td className="p-4">
         <div className="flex flex-col gap-1">
-          <Badge variant={statusVariants[actualStatus]} data-testid={`badge-status-${id}`}>
+          <Badge variant={statusVariants[actualStatus]} className="text-xs" data-testid={`badge-status-${id}`}>
             {actualStatus}
           </Badge>
           {!localHasReceipt && !localGL && !localDepartment && !localCostCenter && (
@@ -117,7 +117,7 @@ export function TransactionRow({
           )}
         </div>
       </td>
-      <td className="p-3">
+      <td className="p-4">
         <Select value={localGL} onValueChange={(value) => {
           setLocalGL(value);
           onUpdateGL?.(value);
@@ -133,7 +133,7 @@ export function TransactionRow({
           </SelectContent>
         </Select>
       </td>
-      <td className="p-3">
+      <td className="p-4">
         <Select value={localDepartment} onValueChange={(value) => {
           setLocalDepartment(value);
           onUpdateDepartment?.(value);
@@ -149,7 +149,7 @@ export function TransactionRow({
           </SelectContent>
         </Select>
       </td>
-      <td className="p-3">
+      <td className="p-4">
         <Select value={localCostCenter} onValueChange={(value) => {
           setLocalCostCenter(value);
           onUpdateCostCenter?.(value);
@@ -164,7 +164,7 @@ export function TransactionRow({
           </SelectContent>
         </Select>
       </td>
-      <td className="p-3">
+      <td className="p-4">
         {localHasReceipt ? (
           <Check className="h-4 w-4 text-muted-foreground" data-testid={`icon-receipt-uploaded-${id}`} />
         ) : actualStatus === "Pending Receipt" || !localHasReceipt ? (
@@ -184,7 +184,7 @@ export function TransactionRow({
           <AlertCircle className="h-4 w-4 text-muted-foreground" />
         )}
       </td>
-      <td className="p-3">
+      <td className="p-4">
         <Button
           variant="outline"
           size="sm"
