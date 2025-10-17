@@ -49,6 +49,9 @@ export const cards = pgTable("cards", {
   requestedBy: text("requested_by").notNull(),
   approvedBy: text("approved_by"),
   cardNumber: text("card_number"),
+  expiryDate: text("expiry_date"),
+  cvv: text("cvv"),
+  last4: text("last_4"),
   
   // Card Controls
   currency: text("currency").notNull().default("USD"),
@@ -74,6 +77,9 @@ export const insertCardSchema = createInsertSchema(cards).omit({
   createdAt: true,
   currentSpend: true,
   cardNumber: true,
+  expiryDate: true,
+  cvv: true,
+  last4: true,
 }).extend({
   validFrom: z.string().optional().nullable().or(z.date().optional()),
   validUntil: z.string().optional().nullable().or(z.date().optional()),

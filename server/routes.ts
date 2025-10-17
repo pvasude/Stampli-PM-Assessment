@@ -98,7 +98,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/cards/:id", async (req, res) => {
     try {
-      const card = await storage.updateCard(req.params.id, req.body);
+      const updateData = { ...req.body };
+      
+      // If card is being approved (status changing to Active), generate card details
+      if (updateData.status === "Active") {
+        // Generate virtual card number (starts with 4571 for Visa virtual cards)
+        const cardNumber = `4571${Math.floor(Math.random() * 1000000000000).toString().padStart(12, '0')}`;
+        const last4 = cardNumber.slice(-4);
+        
+        // Generate expiry date (2 years from now)
+        const expiryDate = new Date();
+        expiryDate.setFullYear(expiryDate.getFullYear() + 2);
+        const expiryMonth = String(expiryDate.getMonth() + 1).padStart(2, '0');
+        const expiryYear = String(expiryDate.getFullYear()).slice(-2);
+        
+        // Generate CVV (3 random digits)
+        const cvv = Math.floor(Math.random() * 900 + 100).toString();
+        
+        updateData.cardNumber = cardNumber;
+        updateData.last4 = last4;
+        updateData.expiryDate = `${expiryMonth}/${expiryYear}`;
+        updateData.cvv = cvv;
+      }
+      
+      const card = await storage.updateCard(req.params.id, updateData);
       res.json(card);
     } catch (error) {
       res.status(500).json({ error: "Failed to update card" });
