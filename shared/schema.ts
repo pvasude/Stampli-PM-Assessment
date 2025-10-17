@@ -117,16 +117,21 @@ export type CardApproval = typeof cardApprovals.$inferSelect;
 
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  cardId: varchar("card_id").notNull().references(() => cards.id, { onDelete: 'cascade' }),
+  cardId: varchar("card_id").references(() => cards.id, { onDelete: 'cascade' }),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   vendorName: text("vendor_name").notNull(),
+  merchantName: text("merchant_name"),
   transactionDate: timestamp("transaction_date").notNull(),
   status: text("status").notNull(),
+  description: text("description"),
   glAccount: text("gl_account"),
   costCenter: text("cost_center"),
+  department: text("department"),
   memo: text("memo"),
   receiptUrl: text("receipt_url"),
   invoiceId: varchar("invoice_id").references(() => invoices.id, { onDelete: 'set null' }),
+  paymentId: varchar("payment_id").references(() => payments.id, { onDelete: 'set null' }),
+  paymentMethod: text("payment_method"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

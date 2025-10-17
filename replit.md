@@ -6,6 +6,45 @@ Stampli AP + Cards is an invoice-centric Accounts Payable and Virtual Card Manag
 
 ## Recent Changes
 
+**October 17, 2025 - Transaction Records for All Payment Methods:**
+- **Requirements:**
+  - Transactions should only appear when payments are actually made (for the paid amount)
+  - All payment methods (card, ACH wallet/bank, check wallet/bank) should create transaction records
+  - For "Pay via Stampli", card is created immediately but transaction attempt is separate and can be declined
+  - If transaction is declined, card remains linked to invoice for retry
+
+- **Schema Changes:**
+  - Made `cardId` optional in transactions table (was required, now nullable)
+  - Added `merchantName`, `description`, `department`, `paymentId`, `paymentMethod` fields to transactions
+  - Transactions can now be created for ACH and Check payments without cards
+
+- **Payment Flow Updates:**
+  - **Pay via Stampli (Card):**
+    1. Card created immediately and linked to invoice (lockedCardId)
+    2. Transaction attempt made separately with wallet validation
+    3. If declined: Card remains parked with invoice, toast shows "Card created but charge failed. You can retry once wallet is funded."
+    4. If approved: Transaction record created, invoice status updated
+  
+  - **ACH Payment (Wallet/Bank):**
+    1. If "Wallet" selected: Checks wallet balance, deducts if sufficient
+    2. If "Bank" selected: No wallet deduction
+    3. Creates payment record with appropriate method label ("ach-wallet" or "ach-bank")
+    4. Creates transaction record showing the paid amount
+    5. Marks invoice as paid
+  
+  - **Check Payment (Wallet/Bank):**
+    1. If "Wallet" selected: Checks wallet balance, deducts if sufficient
+    2. If "Bank" selected: No wallet deduction
+    3. Creates payment record with appropriate method label ("check-wallet" or "check-bank")
+    4. Creates transaction record showing the paid amount
+    5. Marks invoice as paid
+
+- **Key Behaviors:**
+  - Transaction records only created for successfully paid amounts
+  - Multiple payments to same invoice create multiple transaction records
+  - Card creation decoupled from transaction charging - card can exist without successful transaction
+  - Until first payment is approved, user can change payment method
+
 **October 17, 2025 - Card Modification Approval Workflow (Bug Fix):**
 - **Issue:** When users edited card limits and submitted for approval, nothing appeared on the Approvals page
 - **Root Causes:**

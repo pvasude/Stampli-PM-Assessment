@@ -199,14 +199,14 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       // Parse the card limit to a number and convert to string for the API
       const limitAmount = parseFloat(cardLimit.replace(/[$,]/g, ''));
       
-      // Create the card with auto-approved status for invoice payments
+      // Step 1: Create the card and link it to the invoice immediately
       const cardData = {
         cardholderName,
         purpose: `Payment for ${invoice.invoiceNumber}`,
         spendLimit: limitAmount.toFixed(2),
         currentSpend: 0,
         validFrom: new Date().toISOString(),
-        validUntil: new Date(validUntil + 'T23:59:59').toISOString(), // Convert yyyy-MM-dd to ISO timestamp
+        validUntil: new Date(validUntil + 'T23:59:59').toISOString(),
         status: "Active",
         requestedBy: cardholderName,
         approvedBy: "Auto-Approved",
@@ -225,40 +225,56 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       
       const newCard = await createCardMutation.mutateAsync(cardData);
       
-      // Immediately charge the card via simulate transaction
-      const transactionResponse = await apiRequest('POST', '/api/simulate/transaction', {
-        cardId: newCard.id,
-        amount: limitAmount.toFixed(2),
-        merchant: invoice.vendorName,
-      });
-      
-      const transaction = await transactionResponse.json();
-      
-      if (!transaction.approved) {
-        throw new Error(transaction.declineReason || "Transaction declined - insufficient funds or card limit exceeded");
-      }
-      
-      // Lock invoice to this card and let backend derive status based on payments
+      // Link invoice to this card
       await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
         lockedCardId: newCard.id,
         paymentMethod: `Virtual Card - ${newCard.last4 || "****"}`,
       });
       
-      // Update invoice status based on payments
-      await apiRequest('POST', `/api/invoices/${invoice.id}/update-status`, {});
-      
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       
-      onPay?.("card-stampli", { card: newCard, transaction });
-      toast({
-        title: "Payment processed successfully",
-        description: `Invoice ${invoice.invoiceNumber} paid via Virtual Card`,
-      });
-      setOpen(false);
+      // Step 2: Attempt to charge the card (this can be declined if wallet has insufficient funds)
+      try {
+        const transactionResponse = await apiRequest('POST', '/api/simulate/transaction', {
+          cardId: newCard.id,
+          amount: limitAmount.toFixed(2),
+          merchant: invoice.vendorName,
+        });
+        
+        const transaction = await transactionResponse.json();
+        
+        if (!transaction.approved) {
+          // Transaction declined - card remains linked to invoice for retry
+          toast({
+            title: "Transaction declined",
+            description: transaction.declineReason || "Insufficient wallet funds. Card created and linked to invoice - you can retry once wallet is funded.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Transaction approved - update invoice status
+        await apiRequest('POST', `/api/invoices/${invoice.id}/update-status`, {});
+        queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+        
+        onPay?.("card-stampli", { card: newCard, transaction });
+        toast({
+          title: "Payment processed successfully",
+          description: `Invoice ${invoice.invoiceNumber} paid via Virtual Card`,
+        });
+        setOpen(false);
+      } catch (transactionError) {
+        // Transaction attempt failed but card is still created and linked
+        toast({
+          title: "Transaction failed",
+          description: transactionError instanceof Error ? transactionError.message : "Card created but charge failed. You can retry once wallet is funded.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
-        title: "Payment failed",
+        title: "Failed to create card",
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
@@ -368,11 +384,27 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       }
       
       // Record payment
-      await apiRequest('POST', '/api/payments', {
+      const paymentResponse = await apiRequest('POST', '/api/payments', {
         invoiceId: invoice.id,
         amount: invoice.amount,
         paymentMethod: achPaymentSource === "wallet" ? "ach-wallet" : "ach-bank",
+        status: "Paid",
+        dueDate: new Date().toISOString(),
+        paidDate: new Date().toISOString(),
+      });
+      const payment = await paymentResponse.json();
+      
+      // Create transaction record
+      await apiRequest('POST', '/api/transactions', {
+        amount: invoice.amount,
+        vendorName: invoice.vendorName,
+        merchantName: invoice.vendorName,
         transactionDate: new Date().toISOString(),
+        status: "Approved",
+        invoiceId: invoice.id,
+        paymentId: payment.id,
+        paymentMethod: achPaymentSource === "wallet" ? "ACH (Wallet)" : "ACH (Bank)",
+        description: `ACH payment for invoice ${invoice.invoiceNumber}`,
       });
       
       // Mark invoice as paid
@@ -382,6 +414,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
       queryClient.invalidateQueries({ queryKey: ['/api/payments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
       
       onPay?.("ach", { invoiceId: invoice.id, source: achPaymentSource });
@@ -427,11 +460,27 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       }
       
       // Record payment
-      await apiRequest('POST', '/api/payments', {
+      const paymentResponse = await apiRequest('POST', '/api/payments', {
         invoiceId: invoice.id,
         amount: invoice.amount,
         paymentMethod: checkPaymentSource === "wallet" ? "check-wallet" : "check-bank",
+        status: "Paid",
+        dueDate: new Date().toISOString(),
+        paidDate: new Date().toISOString(),
+      });
+      const payment = await paymentResponse.json();
+      
+      // Create transaction record
+      await apiRequest('POST', '/api/transactions', {
+        amount: invoice.amount,
+        vendorName: invoice.vendorName,
+        merchantName: invoice.vendorName,
         transactionDate: new Date().toISOString(),
+        status: "Approved",
+        invoiceId: invoice.id,
+        paymentId: payment.id,
+        paymentMethod: checkPaymentSource === "wallet" ? "Check (Wallet)" : "Check (Bank)",
+        description: `Check payment for invoice ${invoice.invoiceNumber}`,
       });
       
       // Mark invoice as paid
@@ -441,6 +490,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
       queryClient.invalidateQueries({ queryKey: ['/api/payments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
       
       onPay?.("check", { invoiceId: invoice.id, source: checkPaymentSource });
