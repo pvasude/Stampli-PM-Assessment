@@ -488,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { amount } = req.body;
       const numAmount = parseFloat(amount);
       
-      if (!amount || isNaN(numAmount) || numAmount <= 0) {
+      if (!amount || isNaN(numAmount) || numAmount === 0) {
         return res.status(400).json({ error: "Invalid amount. Must be a positive number." });
       }
       
@@ -530,7 +530,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(payment);
     } catch (error) {
-      res.status(400).json({ error: "Invalid payment data" });
+      console.error("Payment creation error:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ error: "Invalid payment data", details: error.message });
+      } else {
+        res.status(400).json({ error: "Invalid payment data" });
+      }
     }
   });
 

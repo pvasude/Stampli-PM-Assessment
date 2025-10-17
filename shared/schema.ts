@@ -138,6 +138,8 @@ export const transactions = pgTable("transactions", {
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
   id: true,
   createdAt: true,
+}).extend({
+  transactionDate: z.coerce.date(),
 });
 
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
@@ -187,6 +189,9 @@ export const payments = pgTable("payments", {
 export const insertPaymentSchema = createInsertSchema(payments).omit({
   id: true,
   createdAt: true,
+}).extend({
+  dueDate: z.coerce.date(),
+  paidDate: z.coerce.date().optional(),
 });
 
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;

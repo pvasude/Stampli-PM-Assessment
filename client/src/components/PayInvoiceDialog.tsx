@@ -384,19 +384,20 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       }
       
       // Record payment
+      const now = new Date();
       const paymentResponse = await apiRequest('POST', '/api/payments', {
         invoiceId: invoice.id,
-        amount: invoice.amount,
+        amount: amount.toString(),
         paymentMethod: achPaymentSource === "wallet" ? "ach-wallet" : "ach-bank",
         status: "Paid",
-        dueDate: new Date().toISOString(),
-        paidDate: new Date().toISOString(),
+        dueDate: now,
+        paidDate: now,
       });
       const payment = await paymentResponse.json();
       
       // Create transaction record
       await apiRequest('POST', '/api/transactions', {
-        amount: invoice.amount,
+        amount: amount.toString(),
         vendorName: invoice.vendorName,
         merchantName: invoice.vendorName,
         transactionDate: new Date().toISOString(),
@@ -460,19 +461,20 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       }
       
       // Record payment
+      const now = new Date();
       const paymentResponse = await apiRequest('POST', '/api/payments', {
         invoiceId: invoice.id,
-        amount: invoice.amount,
+        amount: amount.toString(),
         paymentMethod: checkPaymentSource === "wallet" ? "check-wallet" : "check-bank",
         status: "Paid",
-        dueDate: new Date().toISOString(),
-        paidDate: new Date().toISOString(),
+        dueDate: now,
+        paidDate: now,
       });
       const payment = await paymentResponse.json();
       
       // Create transaction record
       await apiRequest('POST', '/api/transactions', {
-        amount: invoice.amount,
+        amount: amount.toString(),
         vendorName: invoice.vendorName,
         merchantName: invoice.vendorName,
         transactionDate: new Date().toISOString(),
