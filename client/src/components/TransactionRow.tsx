@@ -20,7 +20,7 @@ interface TransactionRowProps {
   cardholder?: string;
   paymentMethod?: "Card" | "ACH" | "Check";
   invoiceNumber?: string;
-  status: "Pending Receipt" | "Pending Coding" | "Ready to Sync";
+  status: "Pending Receipt" | "Pending Coding" | "Ready to Sync" | "Synced";
   glAccount?: string;
   department?: string;
   costCenter?: string;
@@ -59,7 +59,12 @@ export function TransactionRow({
   const [localHasReceipt, setLocalHasReceipt] = useState(hasReceipt);
 
   // Calculate actual status based on receipt and coding
-  const calculateStatus = (): "Pending Receipt" | "Pending Coding" | "Ready to Sync" => {
+  const calculateStatus = (): "Pending Receipt" | "Pending Coding" | "Ready to Sync" | "Synced" => {
+    // If already synced, keep that status
+    if (status === "Synced") {
+      return "Synced";
+    }
+    
     const hasCoding = localGL && localDepartment && localCostCenter;
     
     if (!localHasReceipt && !hasCoding) {
@@ -83,6 +88,7 @@ export function TransactionRow({
     "Pending Receipt": "secondary" as const,
     "Pending Coding": "secondary" as const,
     "Ready to Sync": "default" as const,
+    "Synced": "default" as const,
   };
 
   return (

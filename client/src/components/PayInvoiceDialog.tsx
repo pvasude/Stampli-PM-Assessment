@@ -166,18 +166,19 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
     }
 
     try {
-      // Parse the card limit to a number
+      // Parse the card limit to a number and convert to string for the API
       const limitAmount = parseFloat(cardLimit.replace(/[$,]/g, ''));
       
       // Create the card
       const cardData = {
         cardholderName,
         purpose: `Payment for ${invoice.invoiceNumber}`,
-        spendLimit: limitAmount,
+        spendLimit: limitAmount.toFixed(2), // Convert to string with 2 decimals
         currentSpend: 0,
         validFrom: new Date().toISOString(),
         validUntil,
         status: "Pending Approval",
+        requestedBy: "Current User", // Add required field
         cardType,
         transactionCount: cardType === "one-time" ? transactionCount : null,
         renewalFrequency: cardType === "recurring" ? renewalFrequency : null,
@@ -193,12 +194,13 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       
       const newCard = await createCardMutation.mutateAsync(cardData);
       
-      // Create approval record
+      // Create approval record with correct schema fields
       const approvalData = {
-        cardId: newCard.id,
-        requestedBy: "Current User",
-        approver: "Lisa Chen",
+        cardRequestId: newCard.id,
+        approverName: "Lisa Chen",
+        approverRole: "Finance Manager",
         status: "Pending",
+        approvalLevel: 1,
       };
       
       await createApprovalMutation.mutateAsync(approvalData);
