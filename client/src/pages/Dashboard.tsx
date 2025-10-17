@@ -3,11 +3,12 @@ import { CardItem } from "@/components/CardItem";
 import { InvoiceItem } from "@/components/InvoiceItem";
 import { CardRequestDialog } from "@/components/CardRequestDialog";
 import { Button } from "@/components/ui/button";
-import { CreditCard, FileText, TrendingUp, DollarSign } from "lucide-react";
+import { CreditCard, FileText, TrendingUp, DollarSign, FlaskConical } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { Card, Invoice, CardApproval } from "@shared/schema";
 import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Helper to format card data for UI
 function formatCard(card: Card) {
@@ -104,14 +105,25 @@ export default function Dashboard() {
 
   return (
     <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-medium">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Manage your virtual cards and invoice payments
           </p>
         </div>
-        <CardRequestDialog />
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/simulate")}
+            data-testid="button-simulate"
+            className="gap-2"
+          >
+            <FlaskConical className="h-4 w-4" />
+            Simulate (Testing Only)
+          </Button>
+          <CardRequestDialog />
+        </div>
       </div>
 
       {cardsLoading || invoicesLoading ? (
@@ -153,15 +165,24 @@ export default function Dashboard() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-medium">Pending Invoices</h2>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navigate("/invoices")}
-                  disabled={isOnInvoicesPage}
-                  data-testid="button-view-invoices"
-                >
-                  View Invoices
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled
+                        data-testid="button-view-invoices"
+                        className="opacity-50 cursor-not-allowed"
+                      >
+                        View Invoices
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Feature not implemented in this demo</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
               <div className="space-y-4">
                 {pendingInvoicesFormatted.map((invoice) => (
