@@ -126,16 +126,37 @@ export default function Simulate() {
   // Simulate transaction mutation
   const simulateTransactionMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('POST', '/api/simulate/transaction', data);
-      return await response.json();
+      const response = await fetch('/api/simulate/transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        credentials: 'include',
+      });
+      
+      const result = await response.json();
+      
+      // Return both the result and whether it was declined
+      return {
+        ...result,
+        wasDeclined: response.status === 400 && result.declined,
+      };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/cards'] });
-      toast({
-        title: "Transaction simulated",
-        description: "Transaction has been added to the system",
-      });
+      
+      if (data.wasDeclined) {
+        toast({
+          title: "Transaction simulated but declined",
+          description: data.declineReason || "Transaction was declined",
+        });
+      } else {
+        toast({
+          title: "Transaction simulated",
+          description: "Transaction has been added to the system",
+        });
+      }
+      
       // Reset form
       setMerchantName("");
       setTransactionAmount("");
