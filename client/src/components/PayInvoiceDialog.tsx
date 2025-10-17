@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CreditCard, Building, FileCheck, CheckCircle2, AlertCircle, Sparkles, DollarSign, X, Zap, Mail, Copy } from "lucide-react";
+import { CreditCard, Building, FileCheck, CheckCircle2, AlertCircle, Sparkles, DollarSign, X, Zap, Mail, Copy, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Popover,
@@ -31,6 +31,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const MERCHANT_OPTIONS = [
   "Amazon",
@@ -157,6 +162,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   
   // Card generation fields - pre-populated from invoice
   const [cardholderName, setCardholderName] = useState("");
+  const [vendorEmail, setVendorEmail] = useState("");
   // Default to 30 days from now in yyyy-MM-dd format
   const [validUntil, setValidUntil] = useState(() => {
     const date = new Date();
@@ -262,6 +268,15 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       toast({
         title: "Missing information",
         description: "Please provide cardholder name and valid until date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!vendorEmail.trim()) {
+      toast({
+        title: "Vendor email required",
+        description: "Please provide the vendor's email address to share card details",
         variant: "destructive",
       });
       return;
@@ -649,6 +664,30 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                 />
               </div>
 
+              {cardPaymentMode === "share-card" && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="vendor-email">Vendor Email *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Demo purposes only - no email will actually be sent</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="vendor-email"
+                    type="email"
+                    value={vendorEmail}
+                    onChange={(e) => setVendorEmail(e.target.value)}
+                    placeholder={`${invoice.vendorName.toLowerCase().replace(/\s+/g, '')}@example.com`}
+                    data-testid="input-vendor-email"
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="amount">Card Limit</Label>
@@ -833,7 +872,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                 <Button 
                   onClick={handleShareCard} 
                   className="w-full" 
-                  disabled={!cardholderName.trim() || createCardMutation.isPending}
+                  disabled={!cardholderName.trim() || !vendorEmail.trim() || createCardMutation.isPending}
                   data-testid="button-share-card"
                 >
                   <Mail className="h-4 w-4 mr-2" />
