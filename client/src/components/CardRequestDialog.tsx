@@ -60,6 +60,24 @@ const MCC_OPTIONS = [
   { code: "7311", name: "Advertising Services" },
 ];
 
+const COUNTRY_OPTIONS = [
+  { code: "US", name: "United States" },
+  { code: "CA", name: "Canada" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "AU", name: "Australia" },
+  { code: "DE", name: "Germany" },
+  { code: "FR", name: "France" },
+  { code: "IT", name: "Italy" },
+  { code: "ES", name: "Spain" },
+  { code: "MX", name: "Mexico" },
+  { code: "BR", name: "Brazil" },
+  { code: "IN", name: "India" },
+  { code: "JP", name: "Japan" },
+  { code: "CN", name: "China" },
+  { code: "SG", name: "Singapore" },
+  { code: "AE", name: "United Arab Emirates" },
+];
+
 interface CardRequestDialogProps {
   trigger?: React.ReactNode;
 }
@@ -86,7 +104,7 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
   // Restrictions
   const [allowedMerchants, setAllowedMerchants] = useState<string[]>([]);
   const [allowedMccCodes, setAllowedMccCodes] = useState<string[]>([]);
-  const [allowedCountries, setAllowedCountries] = useState("");
+  const [allowedCountries, setAllowedCountries] = useState<string[]>([]);
   const [channelRestriction, setChannelRestriction] = useState("both");
   
   // Coding Template
@@ -125,7 +143,7 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
       validUntil,
       allowedMerchants,
       allowedMccCodes,
-      allowedCountries: allowedCountries.split(',').map((c: string) => c.trim()).filter(Boolean),
+      allowedCountries,
       channelRestriction,
       glAccountTemplate: glAccount,
       departmentTemplate: department,
@@ -430,14 +448,62 @@ export function CardRequestDialog({ trigger }: CardRequestDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="countries">Allowed Countries</Label>
-              <Input
-                id="countries"
-                value={allowedCountries}
-                onChange={(e) => setAllowedCountries(e.target.value)}
-                placeholder="e.g., US, CA, UK (comma-separated)"
-                data-testid="input-allowed-countries"
-              />
+              <Label>Allowed Countries</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto min-h-9"
+                    data-testid="button-select-countries"
+                  >
+                    {allowedCountries.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {allowedCountries.map((code) => {
+                          const country = COUNTRY_OPTIONS.find((c) => c.code === code);
+                          return (
+                            <Badge key={code} variant="secondary" className="text-xs">
+                              {code} - {country?.name}
+                              <X
+                                className="ml-1 h-3 w-3 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAllowedCountries(allowedCountries.filter((c) => c !== code));
+                                }}
+                              />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Select countries...</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <div className="max-h-[300px] overflow-y-auto p-2">
+                    {COUNTRY_OPTIONS.map((country) => (
+                      <div
+                        key={country.code}
+                        className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                        onClick={() => {
+                          if (allowedCountries.includes(country.code)) {
+                            setAllowedCountries(allowedCountries.filter((c) => c !== country.code));
+                          } else {
+                            setAllowedCountries([...allowedCountries, country.code]);
+                          }
+                        }}
+                        data-testid={`checkbox-country-${country.code.toLowerCase()}`}
+                      >
+                        <Checkbox checked={allowedCountries.includes(country.code)} />
+                        <span className="text-sm">{country.code} - {country.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                Select one or more countries where this card can be used
+              </p>
             </div>
 
             <div className="space-y-2">

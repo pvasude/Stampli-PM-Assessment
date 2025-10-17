@@ -20,8 +20,48 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, Building, FileCheck, CheckCircle2, AlertCircle, Sparkles, DollarSign } from "lucide-react";
+import { CreditCard, Building, FileCheck, CheckCircle2, AlertCircle, Sparkles, DollarSign, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const MERCHANT_OPTIONS = [
+  "Amazon",
+  "Amazon Web Services (AWS)",
+  "Microsoft Azure",
+  "Google Cloud Platform",
+  "Office Depot",
+  "Staples",
+  "LinkedIn",
+  "Zoom",
+  "Slack",
+  "Delta Airlines",
+  "United Airlines",
+  "Hilton Hotels",
+  "Marriott Hotels",
+];
+
+const COUNTRY_OPTIONS = [
+  { code: "US", name: "United States" },
+  { code: "CA", name: "Canada" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "AU", name: "Australia" },
+  { code: "DE", name: "Germany" },
+  { code: "FR", name: "France" },
+  { code: "IT", name: "Italy" },
+  { code: "ES", name: "Spain" },
+  { code: "MX", name: "Mexico" },
+  { code: "BR", name: "Brazil" },
+  { code: "IN", name: "India" },
+  { code: "JP", name: "Japan" },
+  { code: "CN", name: "China" },
+  { code: "SG", name: "Singapore" },
+  { code: "AE", name: "United Arab Emirates" },
+];
 
 interface PayInvoiceDialogProps {
   trigger?: React.ReactNode;
@@ -78,7 +118,8 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   const [cardholderName, setCardholderName] = useState("");
   const [validUntil, setValidUntil] = useState("");
   const [channelRestriction, setChannelRestriction] = useState("both");
-  const [allowedMerchants, setAllowedMerchants] = useState(invoice.vendorName);
+  const [allowedMerchants, setAllowedMerchants] = useState<string[]>([invoice.vendorName]);
+  const [allowedCountries, setAllowedCountries] = useState<string[]>(["US"]);
   const [currency, setCurrency] = useState("USD");
   const [cardType, setCardType] = useState<"one-time" | "recurring">(defaults.cardType);
   const [transactionCount, setTransactionCount] = useState<"1" | "unlimited">(defaults.transactionCount);
@@ -144,7 +185,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]" data-testid="dialog-pay-invoice">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" data-testid="dialog-pay-invoice">
         <DialogHeader>
           <DialogTitle>Pay Invoice {invoice.invoiceNumber}</DialogTitle>
           <DialogDescription>
@@ -300,14 +341,118 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="merchants">Allowed Merchant</Label>
-              <Input
-                id="merchants"
-                value={allowedMerchants}
-                onChange={(e) => setAllowedMerchants(e.target.value)}
-                placeholder="Pre-filled with vendor name"
-                data-testid="input-allowed-merchants"
-              />
+              <Label>Allowed Merchants</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto min-h-9"
+                    data-testid="button-select-merchants"
+                  >
+                    {allowedMerchants.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {allowedMerchants.map((merchant) => (
+                          <Badge key={merchant} variant="secondary" className="text-xs">
+                            {merchant}
+                            <X
+                              className="ml-1 h-3 w-3 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAllowedMerchants(allowedMerchants.filter((m) => m !== merchant));
+                              }}
+                            />
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Select merchants...</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <div className="max-h-[300px] overflow-y-auto p-2">
+                    {MERCHANT_OPTIONS.map((merchant) => (
+                      <div
+                        key={merchant}
+                        className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                        onClick={() => {
+                          if (allowedMerchants.includes(merchant)) {
+                            setAllowedMerchants(allowedMerchants.filter((m) => m !== merchant));
+                          } else {
+                            setAllowedMerchants([...allowedMerchants, merchant]);
+                          }
+                        }}
+                        data-testid={`checkbox-merchant-${merchant.toLowerCase().replace(/\s+/g, '-')}`}
+                      >
+                        <Checkbox checked={allowedMerchants.includes(merchant)} />
+                        <span className="text-sm">{merchant}</span>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                Invoice vendor ({invoice.vendorName}) pre-selected
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Allowed Countries</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto min-h-9"
+                    data-testid="button-select-countries"
+                  >
+                    {allowedCountries.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {allowedCountries.map((code) => {
+                          const country = COUNTRY_OPTIONS.find((c) => c.code === code);
+                          return (
+                            <Badge key={code} variant="secondary" className="text-xs">
+                              {code} - {country?.name}
+                              <X
+                                className="ml-1 h-3 w-3 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAllowedCountries(allowedCountries.filter((c) => c !== code));
+                                }}
+                              />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Select countries...</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <div className="max-h-[300px] overflow-y-auto p-2">
+                    {COUNTRY_OPTIONS.map((country) => (
+                      <div
+                        key={country.code}
+                        className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                        onClick={() => {
+                          if (allowedCountries.includes(country.code)) {
+                            setAllowedCountries(allowedCountries.filter((c) => c !== country.code));
+                          } else {
+                            setAllowedCountries([...allowedCountries, country.code]);
+                          }
+                        }}
+                        data-testid={`checkbox-country-${country.code.toLowerCase()}`}
+                      >
+                        <Checkbox checked={allowedCountries.includes(country.code)} />
+                        <span className="text-sm">{country.code} - {country.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                Select one or more countries where this card can be used
+              </p>
             </div>
 
             <Button 
