@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { invoices, cards, transactions, glAccounts, costCenters, cardApprovals } from "@shared/schema";
+import { invoices, cards, transactions, glAccounts, departments, costCenters, cardApprovals } from "@shared/schema";
 
 async function seed() {
   console.log("🌱 Seeding database...");
@@ -9,8 +9,9 @@ async function seed() {
   await db.delete(cardApprovals);
   await db.delete(cards);
   await db.delete(invoices);
-  await db.delete(glAccounts);
   await db.delete(costCenters);
+  await db.delete(departments);
+  await db.delete(glAccounts);
 
   // Seed GL Accounts
   const glAccountData = [
@@ -25,12 +26,29 @@ async function seed() {
   await db.insert(glAccounts).values(glAccountData);
   console.log("✓ GL Accounts seeded");
 
+  // Seed Departments
+  const departmentData = [
+    { code: "DEPT-SALES", name: "Sales" },
+    { code: "DEPT-TECH", name: "Technology" },
+    { code: "DEPT-OPS", name: "Operations" },
+    { code: "DEPT-MKT", name: "Marketing" },
+  ];
+
+  const insertedDepartments = await db.insert(departments).values(departmentData).returning();
+  console.log("✓ Departments seeded");
+
+  // Create a map of department name to ID
+  const deptMap = insertedDepartments.reduce((acc, dept) => {
+    acc[dept.name] = dept.id;
+    return acc;
+  }, {} as Record<string, string>);
+
   // Seed Cost Centers
   const costCenterData = [
-    { code: "CC-001", name: "Sales Team", department: "Sales" },
-    { code: "CC-002", name: "Engineering", department: "Technology" },
-    { code: "CC-003", name: "Operations", department: "Operations" },
-    { code: "CC-004", name: "Marketing", department: "Marketing" },
+    { code: "CC-001", name: "Sales Team", departmentId: deptMap["Sales"] },
+    { code: "CC-002", name: "Engineering", departmentId: deptMap["Technology"] },
+    { code: "CC-003", name: "Operations", departmentId: deptMap["Operations"] },
+    { code: "CC-004", name: "Marketing", departmentId: deptMap["Marketing"] },
   ];
 
   await db.insert(costCenters).values(costCenterData);

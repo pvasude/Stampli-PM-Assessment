@@ -57,6 +57,18 @@ export default function Transactions() {
     queryKey: ['/api/cards'],
   });
 
+  const { data: departments } = useQuery<Array<{ id: string; code: string; name: string }>>({
+    queryKey: ['/api/departments'],
+  });
+
+  const { data: costCenters } = useQuery<Array<{ id: string; code: string; name: string }>>({
+    queryKey: ['/api/cost-centers'],
+  });
+
+  const { data: glAccounts } = useQuery<Array<{ id: string; code: string; name: string }>>({
+    queryKey: ['/api/gl-accounts'],
+  });
+
   const cards = cardsData ?? [];
   const transactions = transactionsData?.map(txn => formatTransaction(txn, cards)) ?? [];
 
@@ -209,6 +221,9 @@ export default function Transactions() {
                     <TransactionRow
                       key={txn.id}
                       {...txn}
+                      glAccounts={glAccounts}
+                      departments={departments}
+                      costCenters={costCenters}
                       onUploadReceipt={() => setSelectedTransaction(txn.id)}
                       onUpdateGL={(value) => console.log(`GL updated for ${txn.id}:`, value)}
                       onUpdateDepartment={(value) => console.log(`Department updated for ${txn.id}:`, value)}
@@ -252,6 +267,9 @@ export default function Transactions() {
                     <TransactionRow
                       key={txn.id}
                       {...txn}
+                      glAccounts={glAccounts}
+                      departments={departments}
+                      costCenters={costCenters}
                       onUploadReceipt={() => setSelectedTransaction(txn.id)}
                       onUpdateGL={(value) => console.log(`GL updated for ${txn.id}:`, value)}
                       onUpdateDepartment={(value) => console.log(`Department updated for ${txn.id}:`, value)}

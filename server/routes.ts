@@ -324,6 +324,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Cost Center routes
+  app.get("/api/departments", async (req, res) => {
+    try {
+      const depts = await storage.getDepartments();
+      res.json(depts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch departments" });
+    }
+  });
+
   app.get("/api/cost-centers", async (req, res) => {
     try {
       const centers = await storage.getCostCenters();
@@ -345,7 +354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Simulation routes
   app.post("/api/simulate/transaction", async (req, res) => {
     try {
-      const { cardId, amount, merchant } = req.body;
+      const { cardId, amount, merchant, mccCode } = req.body;
       
       // Validate amount
       const transactionAmount = parseFloat(amount);
@@ -368,6 +377,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? "Card is temporarily locked" 
             : "Card is suspended",
         });
+      }
+
+      // Card Controls Validation - both merchant and MCC must pass if both are restricted
+      const hasAllowedMerchants = card.allowedMerchants && card.allowedMerchants.length > 0;
+      const hasAllowedMccCodes = card.allowedMccCodes && card.allowedMccCodes.length > 0;
+      
+      if (hasAllowedMerchants || hasAllowedMccCodes) {
+        let merchantAllowed = true;
+        let mccAllowed = true;
+        
+        // Check merchant restriction if exists
+        if (hasAllowedMerchants) {
+          merchantAllowed = card.allowedMerchants!.some(allowed => 
+            merchant.toLowerCase().includes(allowed.toLowerCase())
+          );
+        }
+        
+        // Check MCC restriction if exists
+        if (hasAllowedMccCodes) {
+          mccAllowed = card.allowedMccCodes!.includes(mccCode);
+        }
+        
+        // If BOTH restrictions exist, BOTH must pass
+        // If only one exists, only that one must pass
+        if (!merchantAllowed || !mccAllowed) {
+          const reasons = [];
+          if (!merchantAllowed) reasons.push("merchant not allowed");
+          if (!mccAllowed) reasons.push("MCC code not allowed");
+          
+          return res.status(400).json({
+            approved: false,
+            declined: true,
+            declineReason: `Transaction declined: ${reasons.join(" and ")}`,
+          });
+        }
       }
 
       // Execute transaction processing atomically with row-level locking

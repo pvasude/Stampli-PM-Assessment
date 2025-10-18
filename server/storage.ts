@@ -5,6 +5,7 @@ import {
   cardApprovals,
   transactions,
   glAccounts,
+  departments,
   costCenters,
   companyWallet,
   payments,
@@ -19,6 +20,7 @@ import {
   type Transaction,
   type InsertTransaction,
   type GLAccount,
+  type Department,
   type CostCenter,
   type CompanyWallet,
   type Payment,
@@ -64,6 +66,10 @@ export interface IStorage {
   // GL Account operations
   getGLAccounts(): Promise<GLAccount[]>;
   createGLAccount(account: Omit<GLAccount, 'id'>): Promise<GLAccount>;
+
+  // Department operations
+  getDepartments(): Promise<Department[]>;
+  createDepartment(department: Omit<Department, 'id'>): Promise<Department>;
 
   // Cost Center operations
   getCostCenters(): Promise<CostCenter[]>;
@@ -251,6 +257,19 @@ export class DatabaseStorage implements IStorage {
       .values(insertAccount)
       .returning();
     return account;
+  }
+
+  // Department operations
+  async getDepartments(): Promise<Department[]> {
+    return await db.select().from(departments);
+  }
+
+  async createDepartment(insertDepartment: Omit<Department, 'id'>): Promise<Department> {
+    const [department] = await db
+      .insert(departments)
+      .values(insertDepartment)
+      .returning();
+    return department;
   }
 
   // Cost Center operations

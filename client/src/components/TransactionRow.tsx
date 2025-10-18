@@ -25,6 +25,9 @@ interface TransactionRowProps {
   department?: string;
   costCenter?: string;
   hasReceipt?: boolean;
+  glAccounts?: Array<{ id: string; code: string; name: string }>;
+  departments?: Array<{ id: string; code: string; name: string }>;
+  costCenters?: Array<{ id: string; code: string; name: string }>;
   onUploadReceipt?: () => void;
   onUpdateGL?: (value: string) => void;
   onUpdateDepartment?: (value: string) => void;
@@ -47,6 +50,9 @@ export function TransactionRow({
   department,
   costCenter,
   hasReceipt,
+  glAccounts = [],
+  departments = [],
+  costCenters = [],
   onUploadReceipt,
   onUpdateGL,
   onUpdateDepartment,
@@ -132,10 +138,15 @@ export function TransactionRow({
             <SelectValue placeholder="Select GL" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="5000">5000 - Office Exp</SelectItem>
-            <SelectItem value="6100">6100 - Travel</SelectItem>
-            <SelectItem value="6200">6200 - Software</SelectItem>
-            <SelectItem value="7000">7000 - Marketing</SelectItem>
+            {glAccounts.length === 0 ? (
+              <SelectItem value="none" disabled>No GL accounts</SelectItem>
+            ) : (
+              glAccounts.map((account) => (
+                <SelectItem key={account.id} value={account.code}>
+                  {account.code} - {account.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </td>
@@ -148,10 +159,15 @@ export function TransactionRow({
             <SelectValue placeholder="Select Dept" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Sales">Sales</SelectItem>
-            <SelectItem value="Engineering">Engineering</SelectItem>
-            <SelectItem value="Operations">Operations</SelectItem>
-            <SelectItem value="Marketing">Marketing</SelectItem>
+            {departments.length === 0 ? (
+              <SelectItem value="none" disabled>No departments</SelectItem>
+            ) : (
+              departments.map((dept) => (
+                <SelectItem key={dept.id} value={dept.name}>
+                  {dept.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </td>
@@ -164,9 +180,15 @@ export function TransactionRow({
             <SelectValue placeholder="Select CC" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="CC-001">CC-001 - Sales</SelectItem>
-            <SelectItem value="CC-002">CC-002 - Eng</SelectItem>
-            <SelectItem value="CC-003">CC-003 - Ops</SelectItem>
+            {costCenters.length === 0 ? (
+              <SelectItem value="none" disabled>No cost centers</SelectItem>
+            ) : (
+              costCenters.map((center) => (
+                <SelectItem key={center.id} value={center.code}>
+                  {center.code} - {center.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </td>

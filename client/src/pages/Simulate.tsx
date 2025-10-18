@@ -32,11 +32,17 @@ type GLAccount = {
   category: string;
 };
 
+type Department = {
+  id: string;
+  code: string;
+  name: string;
+};
+
 type CostCenter = {
   id: string;
   code: string;
   name: string;
-  department: string;
+  departmentId: string;
 };
 
 type PaymentInstallment = {
@@ -59,6 +65,11 @@ export default function Simulate() {
     queryKey: ['/api/gl-accounts'],
   });
 
+  // Fetch Departments
+  const { data: departments, isLoading: departmentsLoading } = useQuery<Department[]>({
+    queryKey: ['/api/departments'],
+  });
+
   // Fetch Cost Centers
   const { data: costCenters, isLoading: costCentersLoading } = useQuery<CostCenter[]>({
     queryKey: ['/api/cost-centers'],
@@ -69,6 +80,7 @@ export default function Simulate() {
   // Transaction simulation state
   const [selectedCard, setSelectedCard] = useState("");
   const [merchantName, setMerchantName] = useState("");
+  const [mccCode, setMccCode] = useState("");
   const [transactionAmount, setTransactionAmount] = useState("");
 
   // Invoice simulation state
@@ -160,6 +172,7 @@ export default function Simulate() {
       
       // Reset form
       setMerchantName("");
+      setMccCode("");
       setTransactionAmount("");
     },
     onError: (error: Error) => {
@@ -207,10 +220,10 @@ export default function Simulate() {
   });
 
   const handleSimulateTransaction = () => {
-    if (!selectedCard || !merchantName || !transactionAmount) {
+    if (!selectedCard || !merchantName || !mccCode || !transactionAmount) {
       toast({
         title: "Missing information",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields (Card, Merchant, MCC, and Amount)",
         variant: "destructive",
       });
       return;
@@ -219,6 +232,7 @@ export default function Simulate() {
     simulateTransactionMutation.mutate({
       cardId: selectedCard,
       merchant: merchantName,
+      mccCode: mccCode,
       amount: parseFloat(transactionAmount),
     });
   };
@@ -342,6 +356,17 @@ export default function Simulate() {
                   onChange={(e) => setMerchantName(e.target.value)}
                   placeholder="e.g., Amazon, Starbucks, Office Depot"
                   data-testid="input-merchant-name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mcc">MCC Code *</Label>
+                <Input
+                  id="mcc"
+                  value={mccCode}
+                  onChange={(e) => setMccCode(e.target.value)}
+                  placeholder="e.g., 5411 (Grocery), 5812 (Restaurant), 5999 (Retail)"
+                  data-testid="input-mcc-code"
                 />
               </div>
 
@@ -538,13 +563,24 @@ export default function Simulate() {
 
                   <div className="space-y-2">
                     <Label htmlFor="department">Department</Label>
-                    <Input
-                      id="department"
-                      value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
-                      placeholder="e.g., Operations"
-                      data-testid="input-department"
-                    />
+                    <Select value={department} onValueChange={setDepartment}>
+                      <SelectTrigger id="department" data-testid="select-department">
+                        <SelectValue placeholder={departmentsLoading ? "Loading..." : "Select department"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departmentsLoading ? (
+                          <SelectItem value="loading" disabled>Loading departments...</SelectItem>
+                        ) : !departments || departments.length === 0 ? (
+                          <SelectItem value="none" disabled>No departments available</SelectItem>
+                        ) : (
+                          departments.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.name}>
+                              {dept.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
