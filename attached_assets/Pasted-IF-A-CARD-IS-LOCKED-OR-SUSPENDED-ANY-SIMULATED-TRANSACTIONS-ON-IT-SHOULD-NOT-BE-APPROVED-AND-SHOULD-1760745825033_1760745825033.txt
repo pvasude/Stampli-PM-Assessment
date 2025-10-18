@@ -1,0 +1,20 @@
+IF A CARD IS LOCKED OR SUSPENDED, ANY SIMULATED TRANSACTIONS ON IT SHOULD NOT BE APPROVED AND SHOULD BE DECLINED
+
+A locked or suspended card should be marked as such in the virtual cards page for its status. intead of active or locked, it should say looked or suspended. locked should be visually the same as active since the card is still active. 
+
+When simulating an invoice, the total amount seems to be rounding down by a few cents
+
+when simulating an ivoice the drop down for conding information (Account department and cost centre is not working)
+
+In an invoice when an an invoice is paid by stampli and the walled balance is not enough, the card should get created but the transaction declined. cards creation are not a function of wallet balance
+
+when an invoice is paid by creating and sharing a cerd, colled the email adress of the vendor to share the card details. there have a tool toip to say this is only for demo purposes and no email will be actually sent
+
+can we make sure the reporting and dashboard section is only picking up data from the data bases. on actual cards created and spend simulated.
+
+when paying an Invoice from ACH or check the quer should be able to specifiy if they want to pay from the wallet for from their bank account. If from the wallet, reduce the wallet balance and make the bill amoiunt paid (only for that payment, not full Invoice amount). if they say from Account, there should be no impact to the wallet but the payment for the invoice should be paid
+
+
+Invoices should only be in the transactions section when a payment is made and only for the paid amount not the full invoice amount. when an Invoice is paid by card, ACH or check and if its 2 payments of 300 and 200 then only apprers ion the transaction section when the amount is paid- irrespective of how it was paid, card, ach from wallet or account or check from wallet or accout 
+
+when you sau Charge card without wallet check, to clarify the card is only created when the invoice is parked to be paid but when the card is charged, the transaction is declined. the card is still availble with the invoice to try again once the wallet has money. however until the first payment is approved the user can change the payment method
