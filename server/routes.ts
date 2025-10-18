@@ -372,6 +372,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Transaction was approved
+      // If this card is linked to an invoice, set firstPaymentMethod if not already set
+      if (card.invoiceId) {
+        const invoice = await storage.getInvoice(card.invoiceId);
+        if (invoice && !invoice.firstPaymentMethod) {
+          await storage.updateInvoice(card.invoiceId, {
+            firstPaymentMethod: "card"
+          });
+        }
+      }
+      
       res.json({
         ...result.transaction,
         approved: true,
@@ -523,8 +533,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validated = insertPaymentSchema.parse(req.body);
       const payment = await storage.createPayment(validated);
       
-      // Automatically update invoice status based on payments
+      // Set firstPaymentMethod if this is the first payment for the invoice
       if (payment.invoiceId) {
+        const invoice = await storage.getInvoice(payment.invoiceId);
+        if (invoice && !invoice.firstPaymentMethod && payment.paymentMethod) {
+          // Determine payment method type from paymentMethod field
+          let methodType = "other";
+          if (payment.paymentMethod.includes("ach")) {
+            methodType = "ach";
+          } else if (payment.paymentMethod.includes("check")) {
+            methodType = "check";
+          } else if (payment.paymentMethod.includes("card") || payment.paymentMethod.includes("Card")) {
+            methodType = "card";
+          }
+          
+          await storage.updateInvoice(payment.invoiceId, {
+            firstPaymentMethod: methodType
+          });
+        }
+        
+        // Automatically update invoice status based on payments
         await storage.updateInvoiceStatus(payment.invoiceId);
       }
       
