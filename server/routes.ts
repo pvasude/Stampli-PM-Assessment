@@ -421,6 +421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount: transactionAmount.toString(),
         merchant: merchant || `Test Merchant ${Math.floor(Math.random() * 1000)}`,
         glAccount: card.glAccountTemplate || "6000",
+        department: card.departmentTemplate || "Operations",
         costCenter: card.costCenterTemplate || "CC-100",
       });
 

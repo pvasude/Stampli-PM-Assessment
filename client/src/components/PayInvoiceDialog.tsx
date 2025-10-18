@@ -85,6 +85,9 @@ interface PayInvoiceDialogProps {
     paymentTerms?: "Net 30" | "Net 60" | "Net 90" | "Due on Receipt" | "Monthly Recurring" | "Quarterly Recurring" | "Yearly Recurring" | "2 Installments" | "3 Installments" | "4 Installments";
     lockedCardId?: string | null;
     firstPaymentMethod?: string | null;
+    defaultGlAccount?: string | null;
+    defaultDepartment?: string | null;
+    defaultCostCenter?: string | null;
   };
   onPay?: (method: string, details: any) => void;
 }
@@ -200,6 +203,11 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   const [transactionCount, setTransactionCount] = useState<"1" | "unlimited">(defaults.transactionCount);
   const [renewalFrequency, setRenewalFrequency] = useState<"month" | "quarter" | "year">(defaults.renewalFrequency);
   
+  // Template coding fields - initialized from invoice defaults
+  const [glAccountTemplate, setGlAccountTemplate] = useState<string | null>(invoice.defaultGlAccount || null);
+  const [departmentTemplate, setDepartmentTemplate] = useState<string | null>(invoice.defaultDepartment || null);
+  const [costCenterTemplate, setCostCenterTemplate] = useState<string | null>(invoice.defaultCostCenter || null);
+  
   // Calculate values
   const cardLimit = invoice.totalAmount || invoice.amount;
   const cashback = (parseFloat(cardLimit.replace(/[$,]/g, '')) * 0.01).toFixed(2);
@@ -278,9 +286,9 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
           allowedMerchants,
           allowedCountries,
           invoiceId: invoice.id,
-          glAccount: null,
-          department: null,
-          costCenter: null,
+          glAccountTemplate,
+          departmentTemplate,
+          costCenterTemplate,
         };
         
         cardToUse = await createCardMutation.mutateAsync(cardData);
@@ -411,9 +419,9 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
         allowedMerchants,
         allowedCountries,
         invoiceId: invoice.id,
-        glAccount: null,
-        department: null,
-        costCenter: null,
+        glAccountTemplate,
+        departmentTemplate,
+        costCenterTemplate,
       };
       
       const newCard = await createCardMutation.mutateAsync(cardData);

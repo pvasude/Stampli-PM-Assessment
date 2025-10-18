@@ -64,6 +64,9 @@ async function seed() {
       status: "Pending",
       description: "Office furniture and equipment for Q1",
       paymentMethod: null,
+      defaultGlAccount: "5000",
+      defaultDepartment: "Operations",
+      defaultCostCenter: "CC-003",
     },
     {
       invoiceNumber: "INV-2024-002",
@@ -73,6 +76,9 @@ async function seed() {
       status: "Approved",
       description: "Annual software licenses renewal",
       paymentMethod: null,
+      defaultGlAccount: "6200",
+      defaultDepartment: "Technology",
+      defaultCostCenter: "CC-002",
     },
     {
       invoiceNumber: "INV-2024-003",
@@ -82,6 +88,9 @@ async function seed() {
       status: "Pending",
       description: "Cloud infrastructure hosting - March",
       paymentMethod: null,
+      defaultGlAccount: "6200",
+      defaultDepartment: "Technology",
+      defaultCostCenter: "CC-002",
     },
     {
       invoiceNumber: "INV-2024-004",
@@ -91,6 +100,9 @@ async function seed() {
       status: "Overdue",
       description: "Brand refresh and website redesign",
       paymentMethod: null,
+      defaultGlAccount: "6100",
+      defaultDepartment: "Marketing",
+      defaultCostCenter: "CC-004",
     },
     {
       invoiceNumber: "INV-2024-005",
@@ -100,6 +112,9 @@ async function seed() {
       status: "Paid",
       description: "Q4 legal consultation services",
       paymentMethod: "check",
+      defaultGlAccount: "7000",
+      defaultDepartment: "Operations",
+      defaultCostCenter: "CC-003",
     },
   ];
 

@@ -97,6 +97,7 @@ export interface IStorage {
     amount: string;
     merchant: string;
     glAccount: string;
+    department: string;
     costCenter: string;
   }): Promise<{
     transaction: Transaction;
@@ -419,6 +420,7 @@ export class DatabaseStorage implements IStorage {
     amount: string;
     merchant: string;
     glAccount: string;
+    department: string;
     costCenter: string;
   }): Promise<{
     transaction: Transaction;
@@ -483,6 +485,7 @@ export class DatabaseStorage implements IStorage {
           transactionDate: new Date(),
           status: declineReason ? "Declined" : "Pending Coding",
           glAccount: params.glAccount,
+          department: params.department,
           costCenter: params.costCenter,
         })
         .returning();
