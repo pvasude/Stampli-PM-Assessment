@@ -55,12 +55,12 @@ export default function Simulate() {
   });
 
   // Fetch GL Accounts
-  const { data: glAccounts } = useQuery<GLAccount[]>({
+  const { data: glAccounts, isLoading: glAccountsLoading } = useQuery<GLAccount[]>({
     queryKey: ['/api/gl-accounts'],
   });
 
   // Fetch Cost Centers
-  const { data: costCenters } = useQuery<CostCenter[]>({
+  const { data: costCenters, isLoading: costCentersLoading } = useQuery<CostCenter[]>({
     queryKey: ['/api/cost-centers'],
   });
 
@@ -518,14 +518,20 @@ export default function Simulate() {
                     <Label htmlFor="gl-account">GL Account</Label>
                     <Select value={glAccount} onValueChange={setGlAccount}>
                       <SelectTrigger id="gl-account" data-testid="select-gl-account">
-                        <SelectValue placeholder="Select account" />
+                        <SelectValue placeholder={glAccountsLoading ? "Loading..." : "Select account"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {glAccounts?.map((account) => (
-                          <SelectItem key={account.id} value={account.code}>
-                            {account.code} - {account.name}
-                          </SelectItem>
-                        ))}
+                        {glAccountsLoading ? (
+                          <SelectItem value="loading" disabled>Loading GL accounts...</SelectItem>
+                        ) : !glAccounts || glAccounts.length === 0 ? (
+                          <SelectItem value="none" disabled>No GL accounts available</SelectItem>
+                        ) : (
+                          glAccounts.map((account) => (
+                            <SelectItem key={account.id} value={account.code}>
+                              {account.code} - {account.name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -545,14 +551,20 @@ export default function Simulate() {
                     <Label htmlFor="cost-center">Cost Center</Label>
                     <Select value={costCenter} onValueChange={setCostCenter}>
                       <SelectTrigger id="cost-center" data-testid="select-cost-center">
-                        <SelectValue placeholder="Select center" />
+                        <SelectValue placeholder={costCentersLoading ? "Loading..." : "Select center"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {costCenters?.map((center) => (
-                          <SelectItem key={center.id} value={center.code}>
-                            {center.code} - {center.name}
-                          </SelectItem>
-                        ))}
+                        {costCentersLoading ? (
+                          <SelectItem value="loading" disabled>Loading cost centers...</SelectItem>
+                        ) : !costCenters || costCenters.length === 0 ? (
+                          <SelectItem value="none" disabled>No cost centers available</SelectItem>
+                        ) : (
+                          costCenters.map((center) => (
+                            <SelectItem key={center.id} value={center.code}>
+                              {center.code} - {center.name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
