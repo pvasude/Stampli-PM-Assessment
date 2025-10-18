@@ -125,6 +125,7 @@ export const transactions = pgTable("transactions", {
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   vendorName: text("vendor_name").notNull(),
   merchantName: text("merchant_name"),
+  mccCode: text("mcc_code"),
   transactionDate: timestamp("transaction_date").notNull(),
   status: text("status").notNull(),
   description: text("description"),

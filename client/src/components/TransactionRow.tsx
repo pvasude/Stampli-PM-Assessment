@@ -65,7 +65,12 @@ export function TransactionRow({
   const [localHasReceipt, setLocalHasReceipt] = useState(hasReceipt);
 
   // Calculate actual status based on receipt and coding
-  const calculateStatus = (): "Pending Receipt" | "Pending Coding" | "Ready to Sync" | "Synced" => {
+  const calculateStatus = (): "Pending Receipt" | "Pending Coding" | "Ready to Sync" | "Synced" | "Declined" => {
+    // If declined, always show declined status
+    if (status === "Declined") {
+      return "Declined";
+    }
+    
     // If already synced, keep that status
     if (status === "Synced") {
       return "Synced";
@@ -95,6 +100,7 @@ export function TransactionRow({
     "Pending Coding": "secondary" as const,
     "Ready to Sync": "default" as const,
     "Synced": "default" as const,
+    "Declined": "destructive" as const,
   };
 
   return (

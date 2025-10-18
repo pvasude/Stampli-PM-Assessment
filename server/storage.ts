@@ -96,6 +96,7 @@ export interface IStorage {
     cardId: string;
     amount: string;
     merchant: string;
+    mccCode?: string;
     glAccount: string;
     department: string;
     costCenter: string;
@@ -419,6 +420,7 @@ export class DatabaseStorage implements IStorage {
     cardId: string;
     amount: string;
     merchant: string;
+    mccCode?: string;
     glAccount: string;
     department: string;
     costCenter: string;
@@ -482,6 +484,8 @@ export class DatabaseStorage implements IStorage {
           cardId: params.cardId,
           amount: params.amount,
           vendorName: params.merchant,
+          merchantName: params.merchant,
+          mccCode: params.mccCode || null,
           transactionDate: new Date(),
           status: declineReason ? "Declined" : "Pending Coding",
           glAccount: params.glAccount,

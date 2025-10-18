@@ -415,7 +415,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!merchantAllowed) reasons.push("merchant not allowed");
           if (!mccAllowed) reasons.push("MCC code not allowed");
           
+          // Create declined transaction record for audit trail
+          const declinedTransaction = await storage.createTransaction({
+            cardId,
+            amount: transactionAmount.toString(),
+            vendorName: merchant || "Unknown Merchant",
+            merchantName: merchant || "Unknown Merchant",
+            mccCode: mccCode || null,
+            transactionDate: new Date(),
+            status: "Declined",
+            description: `Transaction declined: ${reasons.join(" and ")}`,
+            glAccount: card.glAccountTemplate || "6000",
+            department: card.departmentTemplate || "Operations",
+            costCenter: card.costCenterTemplate || "CC-100",
+          });
+          
           return res.status(400).json({
+            ...declinedTransaction,
             approved: false,
             declined: true,
             declineReason: `Transaction declined: ${reasons.join(" and ")}`,
@@ -429,6 +445,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cardId,
         amount: transactionAmount.toString(),
         merchant: merchant || `Test Merchant ${Math.floor(Math.random() * 1000)}`,
+        mccCode: mccCode || undefined,
         glAccount: card.glAccountTemplate || "6000",
         department: card.departmentTemplate || "Operations",
         costCenter: card.costCenterTemplate || "CC-100",
