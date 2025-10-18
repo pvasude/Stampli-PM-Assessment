@@ -45,6 +45,53 @@ Stampli AP + Cards is an invoice-centric Accounts Payable and Virtual Card Manag
   - Card creation decoupled from transaction charging - card can exist without successful transaction
   - Until first payment is approved, user can change payment method
 
+**October 18, 2025 - Strict Payment Method Locking:**
+- **Requirements:**
+  - Once first payment is made, all subsequent payments must use the same method type
+  - If first payment by card, all payments must use that specific card
+  - If first payment by ACH/check, all payments must use ACH/check respectively
+  - Card-invoice linkage must be visible on Cards and Invoices pages
+  - Users can unlink payment method only if no successful payments made yet
+
+- **Schema Changes:**
+  - Added `firstPaymentMethod` field to invoices table (nullable text field)
+  - Tracks the method type of the first successful payment ("card", "ach", or "check")
+
+- **Backend Updates:**
+  - `/api/simulate/transaction`: Sets `firstPaymentMethod = "card"` on invoice after first successful card transaction
+  - `/api/payments`: Sets `firstPaymentMethod` based on payment method type after first successful payment
+  - Unlink endpoint: Allows clearing `lockedCardId` and `paymentMethod` when `firstPaymentMethod` is null
+
+- **Payment Workflow Changes:**
+  - **Card Already Linked (lockedCardId exists):**
+    1. PayInvoiceDialog shows "Retry Payment" button instead of new card creation
+    2. Hides "Share card with vendor" option - only "Pay via Stampli" available
+    3. If no successful payment yet (`firstPaymentMethod` is null), shows "Unlink Payment Method" button
+    4. Uses existing linked card for retry attempts
+  
+  - **First Payment Made (firstPaymentMethod set):**
+    1. Payment method tabs are disabled based on locked method:
+       - If `firstPaymentMethod = "card"`, ACH and Check tabs disabled
+       - If `firstPaymentMethod = "ach"`, Card and Check tabs disabled
+       - If `firstPaymentMethod = "check"`, Card and ACH tabs disabled
+    2. Alert shows which method is locked
+    3. All future payments must use the same method type
+  
+  - **Unlink Functionality:**
+    - Only available when `lockedCardId` exists but `firstPaymentMethod` is null
+    - Clears card linkage and allows choosing different payment method
+    - Not available after first successful payment
+
+- **UI Indicators:**
+  - **Cards Page:**
+    - Shows invoice number for cards linked to invoices
+    - "Invoice Payment" badge on linked cards
+  
+  - **Invoices Page:**
+    - "[METHOD] Locked" badge when `firstPaymentMethod` is set (amber colored with lock icon)
+    - "Card Linked" badge when `lockedCardId` exists but no payment made yet (blue colored)
+    - Badges display in invoice header next to status badge
+
 **October 17, 2025 - Card Modification Approval Workflow (Bug Fix):**
 - **Issue:** When users edited card limits and submitted for approval, nothing appeared on the Approvals page
 - **Root Causes:**
