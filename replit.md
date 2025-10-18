@@ -45,33 +45,42 @@ Stampli AP + Cards is an invoice-centric Accounts Payable and Virtual Card Manag
   - Card creation decoupled from transaction charging - card can exist without successful transaction
   - Until first payment is approved, user can change payment method
 
-**October 18, 2025 - Card Retry UI Improvements:**
-- **Requirements:**
-  - Card numbers should be masked showing only last 4 digits
-  - Retry flow should not ask for information already stored with the card
-
-- **UI Changes:**
-  - Card number masking: Changed from `****1234` to `•••• 1234` (bullet points with space)
-  - Masked display appears in two alerts:
-    1. "Card Linked to Invoice" alert at top of dialog
-    2. "Retry Payment with Linked Card" alert before button
-  
-- **Form Field Hiding:**
-  - When `lockedCard` exists (retry mode), all card configuration fields are hidden:
-    - Cardholder name input
-    - Valid until date input
+**October 18, 2025 - Card Detail Generation and Masking (Critical Bug Fix):**
+- **Issue:** Cards were created without card numbers, last 4 digits, CVV, or expiry dates, causing masked display to show "****" instead of actual last 4 digits
+- **Root Cause:** Card detail generation logic only existed in PATCH /api/cards route (for approval workflow), not in POST /api/cards route (for new card creation)
+- **Fix Implementation:**
+  - Added card detail generation to POST /api/cards when status="Active":
+    - `cardNumber`: 16 digits starting with 4571 (Visa format)
+    - `last4`: Last 4 digits extracted from cardNumber
+    - `expiryDate`: MM/YY format, 2 years from creation
+    - `cvv`: 3-digit security code
+  - Database Migration: Updated all existing Active cards (16 records) to populate missing card details
+- **Masking Display:**
+  - Format: `•••• 1234` where 1234 are actual digits from card.last4 field
+  - Appears in "Card Linked to Invoice" and "Retry Payment with Linked Card" alerts
+  - No longer shows placeholder "****" - always shows real last 4 digits
+- **Form Field Hiding (Retry Mode):**
+  - When `lockedCard` exists, all card configuration fields are hidden:
+    - Cardholder name, valid until date inputs
     - Card limit, currency, channel selectors
     - Allowed merchants and countries selectors
     - Vendor email (if in share mode)
-  - Only visible elements during retry:
-    - Card configuration info badge
-    - Alerts about linked card with masked number
-    - "Retry Payment" button
+  - Only retry button and card info badge visible
+- **Validation Updates:**
+  - Modified `handlePayViaStampli` to skip field validation when card already linked
+  - Retry uses existing card details without re-asking for information
 
-- **Validation Fix:**
-  - Modified `handlePayViaStampli` to skip cardholder name/valid until validation when card is already linked
-  - Retry button now works without requiring hidden fields
-  - Existing card details are used for the transaction
+**October 18, 2025 - Pending Approval Invoice Protection:**
+- **Requirement:** Prevent card creation or linking for invoices with "Pending Approval" status
+- **Implementation:**
+  - Added validation in PayInvoiceDialog to detect Pending Approval status
+  - Displays destructive (red) alert explaining restriction when detected
+  - Disables all card payment options (Pay via Stampli, Share Card, Retry Payment)
+  - Backend validation in handlePayViaStampli and handleShareCard prevents bypassing UI
+- **User Experience:**
+  - Clear warning message: "Invoice Pending Approval - Cards cannot be created for invoices pending approval"
+  - All payment buttons disabled to prevent accidental attempts
+  - User must wait for invoice approval before proceeding with card payment
 
 **October 18, 2025 - Strict Payment Method Locking:**
 - **Requirements:**
