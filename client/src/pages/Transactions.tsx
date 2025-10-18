@@ -32,7 +32,7 @@ function formatTransaction(txn: Transaction, cards: Card[]) {
     cardholder: card?.cardholderName || "Unknown",
     status: txn.status as "Pending Receipt" | "Pending Coding" | "Ready to Sync" | "Synced",
     glAccount: txn.glAccount || undefined,
-    department: txn.costCenter || undefined,
+    department: txn.department || undefined,
     costCenter: txn.costCenter || undefined,
     hasReceipt: !!txn.receiptUrl,
     invoiceNumber: txn.invoiceId || undefined,
