@@ -63,12 +63,21 @@ export default function Cards() {
     queryKey: ['/api/cards'],
   });
 
-  const { data: invoicesData } = useQuery({
+  const { data: invoicesData } = useQuery<Array<{id: string; invoiceNumber: string}>>({
     queryKey: ['/api/invoices'],
   });
 
-  const cards = cardsData?.map(formatCard) ?? [];
   const invoices = invoicesData ?? [];
+  
+  const cards = cardsData?.map(card => {
+    const formatted = formatCard(card);
+    // Find the invoice this card is linked to
+    const linkedInvoice = invoices.find((inv: any) => inv.id === card.invoiceId);
+    return {
+      ...formatted,
+      invoiceNumber: linkedInvoice?.invoiceNumber,
+    };
+  }) ?? [];
 
   const filteredCards = cards.filter((card) => {
     const matchesSearch =
