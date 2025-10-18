@@ -114,11 +114,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validated = insertCardSchema.parse(req.body);
       
       // Convert date strings to Date objects for Drizzle
-      const cardData = {
+      const cardData: any = {
         ...validated,
         validFrom: validated.validFrom ? new Date(validated.validFrom) : null,
         validUntil: validated.validUntil ? new Date(validated.validUntil) : null,
       };
+      
+      // If card is being created as Active, generate card details
+      if (cardData.status === "Active") {
+        // Generate dummy virtual card number (starts with 4571 for Visa virtual cards)
+        const cardNumber = `4571${Math.floor(Math.random() * 1000000000000).toString().padStart(12, '0')}`;
+        const last4 = cardNumber.slice(-4);
+        
+        // Generate expiry date (2 years from now)
+        const expiryDate = new Date();
+        expiryDate.setFullYear(expiryDate.getFullYear() + 2);
+        const expiryMonth = String(expiryDate.getMonth() + 1).padStart(2, '0');
+        const expiryYear = String(expiryDate.getFullYear()).slice(-2);
+        
+        // Generate CVV (3 random digits)
+        const cvv = Math.floor(Math.random() * 900 + 100).toString();
+        
+        cardData.cardNumber = cardNumber;
+        cardData.last4 = last4;
+        cardData.expiryDate = `${expiryMonth}/${expiryYear}`;
+        cardData.cvv = cvv;
+      }
       
       const card = await storage.createCard(cardData);
       res.json(card);
