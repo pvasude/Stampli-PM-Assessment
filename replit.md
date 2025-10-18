@@ -45,6 +45,34 @@ Stampli AP + Cards is an invoice-centric Accounts Payable and Virtual Card Manag
   - Card creation decoupled from transaction charging - card can exist without successful transaction
   - Until first payment is approved, user can change payment method
 
+**October 18, 2025 - Card Retry UI Improvements:**
+- **Requirements:**
+  - Card numbers should be masked showing only last 4 digits
+  - Retry flow should not ask for information already stored with the card
+
+- **UI Changes:**
+  - Card number masking: Changed from `****1234` to `•••• 1234` (bullet points with space)
+  - Masked display appears in two alerts:
+    1. "Card Linked to Invoice" alert at top of dialog
+    2. "Retry Payment with Linked Card" alert before button
+  
+- **Form Field Hiding:**
+  - When `lockedCard` exists (retry mode), all card configuration fields are hidden:
+    - Cardholder name input
+    - Valid until date input
+    - Card limit, currency, channel selectors
+    - Allowed merchants and countries selectors
+    - Vendor email (if in share mode)
+  - Only visible elements during retry:
+    - Card configuration info badge
+    - Alerts about linked card with masked number
+    - "Retry Payment" button
+
+- **Validation Fix:**
+  - Modified `handlePayViaStampli` to skip cardholder name/valid until validation when card is already linked
+  - Retry button now works without requiring hidden fields
+  - Existing card details are used for the transaction
+
 **October 18, 2025 - Strict Payment Method Locking:**
 - **Requirements:**
   - Once first payment is made, all subsequent payments must use the same method type
