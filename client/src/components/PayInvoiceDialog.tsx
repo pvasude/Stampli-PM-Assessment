@@ -160,6 +160,9 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   
   const defaults = getCardDefaults();
   
+  // Payment processing guard to prevent duplicate submissions
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  
   // Card generation fields - pre-populated from invoice
   const [cardholderName, setCardholderName] = useState("");
   const [vendorEmail, setVendorEmail] = useState("");
@@ -195,6 +198,11 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       return;
     }
 
+    if (isProcessingPayment) {
+      return; // Prevent duplicate submissions
+    }
+
+    setIsProcessingPayment(true);
     try {
       // Parse the card limit to a number and convert to string for the API
       const limitAmount = parseFloat(cardLimit.replace(/[$,]/g, ''));
@@ -245,11 +253,14 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
         
         if (!transaction.approved) {
           // Transaction declined - card remains linked to invoice for retry
+          // Show the created card so user knows it exists
+          setCreatedCard(newCard);
           toast({
-            title: "Transaction declined",
+            title: "Card created, transaction declined",
             description: transaction.declineReason || "Insufficient wallet funds. Card created and linked to invoice - you can retry once wallet is funded.",
             variant: "destructive",
           });
+          setIsProcessingPayment(false);
           return;
         }
         
@@ -263,14 +274,18 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
           title: "Payment processed successfully",
           description: `Invoice ${invoice.invoiceNumber} paid via Virtual Card`,
         });
+        setIsProcessingPayment(false);
         setOpen(false);
       } catch (transactionError) {
         // Transaction attempt failed but card is still created and linked
+        // Show the created card so user knows it exists
+        setCreatedCard(newCard);
         toast({
-          title: "Transaction failed",
+          title: "Card created, charge failed",
           description: transactionError instanceof Error ? transactionError.message : "Card created but charge failed. You can retry once wallet is funded.",
           variant: "destructive",
         });
+        setIsProcessingPayment(false);
       }
     } catch (error) {
       toast({
@@ -278,6 +293,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
+      setIsProcessingPayment(false);
     }
   };
 
@@ -300,7 +316,12 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       return;
     }
 
-    try {
+    if (isProcessingPayment) {
+      return; // Prevent duplicate submissions
+    }
+
+    setIsProcessingPayment(true);
+    try{
       // Parse the card limit to a number and convert to string for the API
       const limitAmount = parseFloat(cardLimit.replace(/[$,]/g, ''));
       
@@ -349,12 +370,14 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
         title: "Card created successfully",
         description: `Virtual card ready to share with ${invoice.vendorName}`,
       });
+      setIsProcessingPayment(false);
     } catch (error) {
       toast({
         title: "Failed to create card",
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
+      setIsProcessingPayment(false);
     }
   };
 
@@ -984,21 +1007,21 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                 <Button 
                   onClick={handlePayViaStampli} 
                   className="w-full" 
-                  disabled={!cardholderName.trim() || createCardMutation.isPending}
+                  disabled={!cardholderName.trim() || isProcessingPayment}
                   data-testid="button-pay-via-stampli"
                 >
                   <Zap className="h-4 w-4 mr-2" />
-                  {createCardMutation.isPending ? "Processing..." : "Pay via Stampli"}
+                  {isProcessingPayment ? "Processing..." : "Pay via Stampli"}
                 </Button>
               ) : (
                 <Button 
                   onClick={handleShareCard} 
                   className="w-full" 
-                  disabled={!cardholderName.trim() || !vendorEmail.trim() || createCardMutation.isPending}
+                  disabled={!cardholderName.trim() || !vendorEmail.trim() || isProcessingPayment}
                   data-testid="button-share-card"
                 >
                   <Mail className="h-4 w-4 mr-2" />
-                  {createCardMutation.isPending ? "Creating Card..." : "Create & Share Card"}
+                  {isProcessingPayment ? "Creating Card..." : "Create & Share Card"}
                 </Button>
               )}
             </TabsContent>
