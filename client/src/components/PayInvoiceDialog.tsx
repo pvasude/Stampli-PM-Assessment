@@ -207,6 +207,16 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   const mcpAutomation = invoice.mcpAutomation || "available";
 
   const handlePayViaStampli = async () => {
+    // Prevent card creation for Pending Approval invoices
+    if (invoice.status === "Pending Approval") {
+      toast({
+        title: "Invoice Pending Approval",
+        description: "Cards cannot be created for invoices that are pending approval.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Skip validation when retrying with a locked card (card details already exist)
     if (!lockedCard && (!cardholderName || !validUntil)) {
       toast({
@@ -345,6 +355,16 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   };
 
   const handleShareCard = async () => {
+    // Prevent card creation for Pending Approval invoices
+    if (invoice.status === "Pending Approval") {
+      toast({
+        title: "Invoice Pending Approval",
+        description: "Cards cannot be created for invoices that are pending approval.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!cardholderName || !validUntil) {
       toast({
         title: "Missing information",
@@ -774,16 +794,31 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
               </TabsList>
             
             <TabsContent value="card" className="space-y-4 mt-4">
-              <Alert className="border-primary/20 bg-primary/5">
-                <DollarSign className="h-4 w-4" />
-                <AlertDescription className="flex items-center justify-between">
-                  <span className="text-sm">Earn 1% cashback on this payment</span>
-                  <Badge variant="outline" className="ml-2">
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    ${cashback}
-                  </Badge>
-                </AlertDescription>
-              </Alert>
+              {/* Show warning if invoice is Pending Approval */}
+              {invoice.status === "Pending Approval" && (
+                <Alert className="border-destructive/20 bg-destructive/5">
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  <AlertDescription>
+                    <p className="text-sm font-medium text-destructive">Invoice Pending Approval</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Cards cannot be created for invoices that are pending approval. Please wait for approval before proceeding with payment.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {invoice.status !== "Pending Approval" && (
+                <Alert className="border-primary/20 bg-primary/5">
+                  <DollarSign className="h-4 w-4" />
+                  <AlertDescription className="flex items-center justify-between">
+                    <span className="text-sm">Earn 1% cashback on this payment</span>
+                    <Badge variant="outline" className="ml-2">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      ${cashback}
+                    </Badge>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {/* Card Payment Mode Selection - Only show if no card is linked */}
               {!lockedCard && (
@@ -1103,7 +1138,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                 <Button 
                   onClick={handlePayViaStampli} 
                   className="w-full" 
-                  disabled={isProcessingPayment}
+                  disabled={isProcessingPayment || invoice.status === "Pending Approval"}
                   data-testid="button-retry-payment"
                 >
                   <Zap className="h-4 w-4 mr-2" />
@@ -1113,7 +1148,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                 <Button 
                   onClick={handlePayViaStampli} 
                   className="w-full" 
-                  disabled={!cardholderName.trim() || isProcessingPayment}
+                  disabled={!cardholderName.trim() || isProcessingPayment || invoice.status === "Pending Approval"}
                   data-testid="button-pay-via-stampli"
                 >
                   <Zap className="h-4 w-4 mr-2" />
@@ -1123,7 +1158,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                 <Button 
                   onClick={handleShareCard} 
                   className="w-full" 
-                  disabled={!cardholderName.trim() || !vendorEmail.trim() || isProcessingPayment}
+                  disabled={!cardholderName.trim() || !vendorEmail.trim() || isProcessingPayment || invoice.status === "Pending Approval"}
                   data-testid="button-share-card"
                 >
                   <Mail className="h-4 w-4 mr-2" />
