@@ -1026,6 +1026,48 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="gl-account-template">GL Account Template</Label>
+                    <Input
+                      id="gl-account-template"
+                      value={glAccountTemplate || ''}
+                      onChange={(e) => setGlAccountTemplate(e.target.value || null)}
+                      placeholder="e.g., 6200"
+                      data-testid="input-gl-account-template"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Pre-filled from invoice defaults - transactions inherit this value
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="department-template">Department Template</Label>
+                    <Input
+                      id="department-template"
+                      value={departmentTemplate || ''}
+                      onChange={(e) => setDepartmentTemplate(e.target.value || null)}
+                      placeholder="e.g., Engineering"
+                      data-testid="input-department-template"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Pre-filled from invoice defaults - transactions inherit this value
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cost-center-template">Cost Center Template</Label>
+                    <Input
+                      id="cost-center-template"
+                      value={costCenterTemplate || ''}
+                      onChange={(e) => setCostCenterTemplate(e.target.value || null)}
+                      placeholder="e.g., CC-100"
+                      data-testid="input-cost-center-template"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Pre-filled from invoice defaults - transactions inherit this value
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>Allowed Merchants</Label>
                     <Popover>
                       <PopoverTrigger asChild>
