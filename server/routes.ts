@@ -44,10 +44,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (currentInvoice?.lockedCardId) {
         const lockedCard = await storage.getCard(currentInvoice.lockedCardId);
         
-        // If card is still active (not suspended), block most updates
-        if (lockedCard && lockedCard.status !== "Suspended") {
+        // Check if trying to unlink (setting lockedCardId or paymentMethod to null)
+        const isUnlinkAttempt = req.body.lockedCardId === null || req.body.paymentMethod === null;
+        
+        // Allow unlinking only if no successful payment has been made yet
+        if (isUnlinkAttempt && currentInvoice.firstPaymentMethod) {
+          return res.status(400).json({ 
+            error: "Cannot unlink payment method: invoice has already been paid via " + currentInvoice.firstPaymentMethod
+          });
+        }
+        
+        // If not unlinking, and card is active, enforce strict locking
+        if (!isUnlinkAttempt && lockedCard && lockedCard.status !== "Suspended") {
           // Allow only status updates (for automatic status derivation)
-          // Block all other changes including unlock attempts, payment method changes, etc.
           const allowedFields = ['status'];
           const updatingFields = Object.keys(req.body);
           const blockedFields = updatingFields.filter(field => !allowedFields.includes(field));
