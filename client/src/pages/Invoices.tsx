@@ -21,6 +21,8 @@ function formatInvoice(invoice: Invoice) {
     dueDate: format(new Date(invoice.dueDate), 'MMM dd, yyyy'),
     paymentType: invoice.paymentMethod || 'card' as const,
     paymentTerms: 'Net 30' as const, // Default, would come from invoice if available
+    lockedCardId: invoice.lockedCardId,
+    firstPaymentMethod: invoice.firstPaymentMethod,
   };
 }
 

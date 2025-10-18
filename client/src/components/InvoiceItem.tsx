@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
+import { FileText, Lock } from "lucide-react";
 import { PayInvoiceDialog } from "./PayInvoiceDialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -14,6 +14,8 @@ interface InvoiceItemProps {
   status: "Pending" | "Paid" | "Overdue" | "Approved";
   description?: string;
   paymentTerms?: "Net 30" | "Net 60" | "Net 90" | "Due on Receipt" | "Monthly Recurring" | "Quarterly Recurring" | "Yearly Recurring" | "2 Installments" | "3 Installments" | "4 Installments";
+  lockedCardId?: string | null;
+  firstPaymentMethod?: string | null;
   onViewDetails?: () => void;
 }
 
@@ -26,6 +28,8 @@ export function InvoiceItem({
   status,
   description,
   paymentTerms,
+  lockedCardId,
+  firstPaymentMethod,
   onViewDetails,
 }: InvoiceItemProps) {
   const statusVariants = {
@@ -43,11 +47,22 @@ export function InvoiceItem({
             <FileText className="h-5 w-5 text-accent-foreground" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold" data-testid={`text-invoice-number-${id}`}>{invoiceNumber}</h3>
               <Badge variant={statusVariants[status]} data-testid={`badge-status-${id}`}>
                 {status}
               </Badge>
+              {firstPaymentMethod && (
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20" data-testid={`badge-payment-locked-${id}`}>
+                  <Lock className="h-3 w-3 mr-1" />
+                  {firstPaymentMethod.toUpperCase()} Locked
+                </Badge>
+              )}
+              {lockedCardId && !firstPaymentMethod && (
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20" data-testid={`badge-card-linked-${id}`}>
+                  Card Linked
+                </Badge>
+              )}
             </div>
             <p className="text-sm text-muted-foreground mt-1">{vendorName}</p>
           </div>
@@ -82,7 +97,7 @@ export function InvoiceItem({
           </Tooltip>
           {(status === "Approved" || status === "Overdue") && (
             <PayInvoiceDialog
-              invoice={{ id, invoiceNumber, vendorName, amount, paymentTerms }}
+              invoice={{ id, invoiceNumber, vendorName, amount, paymentTerms, lockedCardId, firstPaymentMethod }}
               trigger={
                 <Button 
                   size="sm" 
