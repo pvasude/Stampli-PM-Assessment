@@ -105,7 +105,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
     cardholderName: string;
     status: string;
   }>({
-    queryKey: ['/api/cards', invoice.lockedCardId],
+    queryKey: [`/api/cards/${invoice.lockedCardId}`],
     enabled: !!invoice.lockedCardId,
   });
   
