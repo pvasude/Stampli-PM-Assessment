@@ -207,7 +207,8 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
   const mcpAutomation = invoice.mcpAutomation || "available";
 
   const handlePayViaStampli = async () => {
-    if (!cardholderName || !validUntil) {
+    // Skip validation when retrying with a locked card (card details already exist)
+    if (!lockedCard && (!cardholderName || !validUntil)) {
       toast({
         title: "Missing information",
         description: "Please provide cardholder name and valid until date",
