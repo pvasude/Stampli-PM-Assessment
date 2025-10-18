@@ -207,44 +207,72 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       // Parse the card limit to a number and convert to string for the API
       const limitAmount = parseFloat(cardLimit.replace(/[$,]/g, ''));
       
-      // Step 1: Create the card and link it to the invoice immediately
-      const cardData = {
-        cardholderName,
-        purpose: `Payment for ${invoice.invoiceNumber}`,
-        spendLimit: limitAmount.toFixed(2),
-        currentSpend: 0,
-        validFrom: new Date().toISOString(),
-        validUntil: new Date(validUntil + 'T23:59:59').toISOString(),
-        status: "Active",
-        requestedBy: cardholderName,
-        approvedBy: "Auto-Approved",
-        cardType,
-        transactionCount: cardType === "one-time" ? transactionCount : null,
-        renewalFrequency: cardType === "recurring" ? renewalFrequency : null,
-        currency,
-        channelRestriction,
-        allowedMerchants,
-        allowedCountries,
-        invoiceId: invoice.id,
-        glAccount: null,
-        department: null,
-        costCenter: null,
-      };
+      // Check if invoice already has a locked card (from previous declined attempt)
+      let cardToUse;
+      if (invoice.lockedCardId) {
+        // Invoice already has a card - fetch it and retry with same card
+        try {
+          const cardResponse = await fetch(`/api/cards/${invoice.lockedCardId}`);
+          if (cardResponse.ok) {
+            const existingCard = await cardResponse.json();
+            // Only reuse if card is still Active
+            if (existingCard.status === "Active") {
+              cardToUse = existingCard;
+              toast({
+                title: "Retrying with existing card",
+                description: `Using existing card ****${existingCard.last4 || "****"}`,
+              });
+            }
+          }
+        } catch (e) {
+          // Card fetch failed, will create new one
+        }
+      }
       
-      const newCard = await createCardMutation.mutateAsync(cardData);
-      
-      // Link invoice to this card
-      await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
-        lockedCardId: newCard.id,
-        paymentMethod: `Virtual Card - ${newCard.last4 || "****"}`,
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      // Step 1: Create the card and link it to the invoice (if we don't already have one)
+      if (!cardToUse) {
+        const cardData = {
+          cardholderName,
+          purpose: `Payment for ${invoice.invoiceNumber}`,
+          spendLimit: limitAmount.toFixed(2),
+          currentSpend: 0,
+          validFrom: new Date().toISOString(),
+          validUntil: new Date(validUntil + 'T23:59:59').toISOString(),
+          status: "Active",
+          requestedBy: cardholderName,
+          approvedBy: "Auto-Approved",
+          cardType,
+          transactionCount: cardType === "one-time" ? transactionCount : null,
+          renewalFrequency: cardType === "recurring" ? renewalFrequency : null,
+          currency,
+          channelRestriction,
+          allowedMerchants,
+          allowedCountries,
+          invoiceId: invoice.id,
+          glAccount: null,
+          department: null,
+          costCenter: null,
+        };
+        
+        cardToUse = await createCardMutation.mutateAsync(cardData);
+        
+        // Link invoice to this card (may fail if invoice is already locked)
+        try {
+          await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
+            lockedCardId: cardToUse.id,
+            paymentMethod: `Virtual Card - ${cardToUse.last4 || "****"}`,
+          });
+          queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+        } catch (patchError) {
+          // Invoice might already be locked from a previous attempt - that's okay
+          console.log("Invoice already locked, proceeding with payment:", patchError);
+        }
+      }
       
       // Step 2: Attempt to charge the card (this can be declined if wallet has insufficient funds)
       try {
         const transactionResponse = await apiRequest('POST', '/api/simulate/transaction', {
-          cardId: newCard.id,
+          cardId: cardToUse.id,
           amount: limitAmount.toFixed(2),
           merchant: invoice.vendorName,
         });
@@ -254,7 +282,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
         if (!transaction.approved) {
           // Transaction declined - card remains linked to invoice for retry
           // Show the created card so user knows it exists
-          setCreatedCard(newCard);
+          setCreatedCard(cardToUse);
           toast({
             title: "Card created, transaction declined",
             description: transaction.declineReason || "Insufficient wallet funds. Card created and linked to invoice - you can retry once wallet is funded.",
@@ -269,7 +297,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
         queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
         queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
         
-        onPay?.("card-stampli", { card: newCard, transaction });
+        onPay?.("card-stampli", { card: cardToUse, transaction });
         toast({
           title: "Payment processed successfully",
           description: `Invoice ${invoice.invoiceNumber} paid via Virtual Card`,
@@ -279,7 +307,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
       } catch (transactionError) {
         // Transaction attempt failed but card is still created and linked
         // Show the created card so user knows it exists
-        setCreatedCard(newCard);
+        setCreatedCard(cardToUse);
         toast({
           title: "Card created, charge failed",
           description: transactionError instanceof Error ? transactionError.message : "Card created but charge failed. You can retry once wallet is funded.",
