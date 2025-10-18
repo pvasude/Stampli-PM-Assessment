@@ -711,7 +711,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Card Linked to Invoice</p>
                     <p className="text-sm text-muted-foreground">
-                      Virtual Card ****{lockedCard.last4 || "****"} is linked to this invoice.
+                      Virtual Card •••• {lockedCard.last4 || "****"} is linked to this invoice.
                       {!invoice.firstPaymentMethod ? (
                         <span className="block mt-1">
                           No successful payment yet - you can unlink this card to choose a different method.
@@ -829,7 +829,7 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                   <AlertDescription>
                     <p className="text-sm font-medium">Retry Payment with Linked Card</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      The linked card ****{lockedCard.last4} will be charged. Make sure your wallet has sufficient funds.
+                      The linked card •••• {lockedCard.last4} will be charged. Make sure your wallet has sufficient funds.
                     </p>
                   </AlertDescription>
                 </Alert>
@@ -888,210 +888,215 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                 </div>
               )}
               
-              <div className="space-y-2">
-                <Label htmlFor="cardholder">Cardholder Name *</Label>
-                <Input
-                  id="cardholder"
-                  value={cardholderName}
-                  onChange={(e) => setCardholderName(e.target.value)}
-                  placeholder="Enter cardholder name"
-                  data-testid="input-cardholder-name"
-                />
-              </div>
-
-              {cardPaymentMode === "share-card" && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="vendor-email">Vendor Email *</Label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Demo purposes only - no email will actually be sent</p>
-                      </TooltipContent>
-                    </Tooltip>
+              {/* Only show card configuration fields when creating a new card (not in retry mode) */}
+              {!lockedCard && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="cardholder">Cardholder Name *</Label>
+                    <Input
+                      id="cardholder"
+                      value={cardholderName}
+                      onChange={(e) => setCardholderName(e.target.value)}
+                      placeholder="Enter cardholder name"
+                      data-testid="input-cardholder-name"
+                    />
                   </div>
-                  <Input
-                    id="vendor-email"
-                    type="email"
-                    value={vendorEmail}
-                    onChange={(e) => setVendorEmail(e.target.value)}
-                    placeholder={`${invoice.vendorName.toLowerCase().replace(/\s+/g, '')}@example.com`}
-                    data-testid="input-vendor-email"
-                  />
-                </div>
-              )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Card Limit</Label>
-                  <Input
-                    id="amount"
-                    value={cardLimit}
-                    disabled
-                    className="bg-muted"
-                    data-testid="input-card-limit"
-                  />
-                  {invoice.totalAmount && invoice.totalAmount !== invoice.amount && (
-                    <p className="text-xs text-muted-foreground">Full invoice value (not current amount due)</p>
+                  {cardPaymentMode === "share-card" && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="vendor-email">Vendor Email *</Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Demo purposes only - no email will actually be sent</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Input
+                        id="vendor-email"
+                        type="email"
+                        value={vendorEmail}
+                        onChange={(e) => setVendorEmail(e.target.value)}
+                        placeholder={`${invoice.vendorName.toLowerCase().replace(/\s+/g, '')}@example.com`}
+                        data-testid="input-vendor-email"
+                      />
+                    </div>
                   )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Currency</Label>
-                  <Select value={currency} onValueChange={setCurrency}>
-                    <SelectTrigger id="currency" data-testid="select-currency">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="valid-until">Valid Until *</Label>
-                  <Input
-                    id="valid-until"
-                    type="date"
-                    value={validUntil}
-                    onChange={(e) => setValidUntil(e.target.value)}
-                    data-testid="input-valid-until"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="channel">Channel</Label>
-                  <Select value={channelRestriction} onValueChange={setChannelRestriction}>
-                    <SelectTrigger id="channel" data-testid="select-channel-restriction">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="online">Online Only</SelectItem>
-                      <SelectItem value="in-store">In-Store Only</SelectItem>
-                      <SelectItem value="both">Online & In-Store</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="amount">Card Limit</Label>
+                      <Input
+                        id="amount"
+                        value={cardLimit}
+                        disabled
+                        className="bg-muted"
+                        data-testid="input-card-limit"
+                      />
+                      {invoice.totalAmount && invoice.totalAmount !== invoice.amount && (
+                        <p className="text-xs text-muted-foreground">Full invoice value (not current amount due)</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="currency">Currency</Label>
+                      <Select value={currency} onValueChange={setCurrency}>
+                        <SelectTrigger id="currency" data-testid="select-currency">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="GBP">GBP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Allowed Merchants</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start h-auto min-h-9"
-                      data-testid="button-select-merchants"
-                    >
-                      {allowedMerchants.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {allowedMerchants.map((merchant) => (
-                            <Badge key={merchant} variant="secondary" className="text-xs">
-                              {merchant}
-                              <X
-                                className="ml-1 h-3 w-3 cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="valid-until">Valid Until *</Label>
+                      <Input
+                        id="valid-until"
+                        type="date"
+                        value={validUntil}
+                        onChange={(e) => setValidUntil(e.target.value)}
+                        data-testid="input-valid-until"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="channel">Channel</Label>
+                      <Select value={channelRestriction} onValueChange={setChannelRestriction}>
+                        <SelectTrigger id="channel" data-testid="select-channel-restriction">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="online">Online Only</SelectItem>
+                          <SelectItem value="in-store">In-Store Only</SelectItem>
+                          <SelectItem value="both">Online & In-Store</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Allowed Merchants</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start h-auto min-h-9"
+                          data-testid="button-select-merchants"
+                        >
+                          {allowedMerchants.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {allowedMerchants.map((merchant) => (
+                                <Badge key={merchant} variant="secondary" className="text-xs">
+                                  {merchant}
+                                  <X
+                                    className="ml-1 h-3 w-3 cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setAllowedMerchants(allowedMerchants.filter((m) => m !== merchant));
+                                    }}
+                                  />
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Select merchants...</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start">
+                        <div className="max-h-[300px] overflow-y-auto p-2">
+                          {MERCHANT_OPTIONS.map((merchant) => (
+                            <div
+                              key={merchant}
+                              className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                              onClick={() => {
+                                if (allowedMerchants.includes(merchant)) {
                                   setAllowedMerchants(allowedMerchants.filter((m) => m !== merchant));
-                                }}
-                              />
-                            </Badge>
+                                } else {
+                                  setAllowedMerchants([...allowedMerchants, merchant]);
+                                }
+                              }}
+                              data-testid={`checkbox-merchant-${merchant.toLowerCase().replace(/\s+/g, '-')}`}
+                            >
+                              <Checkbox checked={allowedMerchants.includes(merchant)} />
+                              <span className="text-sm">{merchant}</span>
+                            </div>
                           ))}
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">Select merchants...</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[400px] p-0" align="start">
-                    <div className="max-h-[300px] overflow-y-auto p-2">
-                      {MERCHANT_OPTIONS.map((merchant) => (
-                        <div
-                          key={merchant}
-                          className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
-                          onClick={() => {
-                            if (allowedMerchants.includes(merchant)) {
-                              setAllowedMerchants(allowedMerchants.filter((m) => m !== merchant));
-                            } else {
-                              setAllowedMerchants([...allowedMerchants, merchant]);
-                            }
-                          }}
-                          data-testid={`checkbox-merchant-${merchant.toLowerCase().replace(/\s+/g, '-')}`}
-                        >
-                          <Checkbox checked={allowedMerchants.includes(merchant)} />
-                          <span className="text-sm">{merchant}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <p className="text-xs text-muted-foreground">
-                  Invoice vendor ({invoice.vendorName}) pre-selected
-                </p>
-              </div>
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs text-muted-foreground">
+                      Invoice vendor ({invoice.vendorName}) pre-selected
+                    </p>
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Allowed Countries</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start h-auto min-h-9"
-                      data-testid="button-select-countries"
-                    >
-                      {allowedCountries.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {allowedCountries.map((code) => {
-                            const country = COUNTRY_OPTIONS.find((c) => c.code === code);
-                            return (
-                              <Badge key={code} variant="secondary" className="text-xs">
-                                {code} - {country?.name}
-                                <X
-                                  className="ml-1 h-3 w-3 cursor-pointer"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setAllowedCountries(allowedCountries.filter((c) => c !== code));
-                                  }}
-                                />
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">Select countries...</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[400px] p-0" align="start">
-                    <div className="max-h-[300px] overflow-y-auto p-2">
-                      {COUNTRY_OPTIONS.map((country) => (
-                        <div
-                          key={country.code}
-                          className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
-                          onClick={() => {
-                            if (allowedCountries.includes(country.code)) {
-                              setAllowedCountries(allowedCountries.filter((c) => c !== country.code));
-                            } else {
-                              setAllowedCountries([...allowedCountries, country.code]);
-                            }
-                          }}
-                          data-testid={`checkbox-country-${country.code.toLowerCase()}`}
+                  <div className="space-y-2">
+                    <Label>Allowed Countries</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start h-auto min-h-9"
+                          data-testid="button-select-countries"
                         >
-                          <Checkbox checked={allowedCountries.includes(country.code)} />
-                          <span className="text-sm">{country.code} - {country.name}</span>
+                          {allowedCountries.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {allowedCountries.map((code) => {
+                                const country = COUNTRY_OPTIONS.find((c) => c.code === code);
+                                return (
+                                  <Badge key={code} variant="secondary" className="text-xs">
+                                    {code} - {country?.name}
+                                    <X
+                                      className="ml-1 h-3 w-3 cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setAllowedCountries(allowedCountries.filter((c) => c !== code));
+                                      }}
+                                    />
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Select countries...</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start">
+                        <div className="max-h-[300px] overflow-y-auto p-2">
+                          {COUNTRY_OPTIONS.map((country) => (
+                            <div
+                              key={country.code}
+                              className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                              onClick={() => {
+                                if (allowedCountries.includes(country.code)) {
+                                  setAllowedCountries(allowedCountries.filter((c) => c !== country.code));
+                                } else {
+                                  setAllowedCountries([...allowedCountries, country.code]);
+                                }
+                              }}
+                              data-testid={`checkbox-country-${country.code.toLowerCase()}`}
+                            >
+                              <Checkbox checked={allowedCountries.includes(country.code)} />
+                              <span className="text-sm">{country.code} - {country.name}</span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <p className="text-xs text-muted-foreground">
-                  Select one or more countries where this card can be used
-                </p>
-              </div>
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs text-muted-foreground">
+                      Select one or more countries where this card can be used
+                    </p>
+                  </div>
+                </>
+              )}
 
               {lockedCard ? (
                 <Button 
