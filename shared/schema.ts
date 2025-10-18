@@ -155,11 +155,19 @@ export const glAccounts = pgTable("gl_accounts", {
 
 export type GLAccount = typeof glAccounts.$inferSelect;
 
+export const departments = pgTable("departments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+});
+
+export type Department = typeof departments.$inferSelect;
+
 export const costCenters = pgTable("cost_centers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   code: text("code").notNull().unique(),
   name: text("name").notNull(),
-  department: text("department").notNull(),
+  departmentId: varchar("department_id").references(() => departments.id, { onDelete: 'restrict' }).notNull(),
 });
 
 export type CostCenter = typeof costCenters.$inferSelect;
