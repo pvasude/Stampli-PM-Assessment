@@ -16,6 +16,9 @@ interface InvoiceItemProps {
   paymentTerms?: "Net 30" | "Net 60" | "Net 90" | "Due on Receipt" | "Monthly Recurring" | "Quarterly Recurring" | "Yearly Recurring" | "2 Installments" | "3 Installments" | "4 Installments";
   lockedCardId?: string | null;
   firstPaymentMethod?: string | null;
+  defaultGlAccount?: string | null;
+  defaultDepartment?: string | null;
+  defaultCostCenter?: string | null;
   onViewDetails?: () => void;
 }
 
@@ -30,6 +33,9 @@ export function InvoiceItem({
   paymentTerms,
   lockedCardId,
   firstPaymentMethod,
+  defaultGlAccount,
+  defaultDepartment,
+  defaultCostCenter,
   onViewDetails,
 }: InvoiceItemProps) {
   const statusVariants = {
@@ -97,7 +103,7 @@ export function InvoiceItem({
           </Tooltip>
           {(status === "Approved" || status === "Overdue") && (
             <PayInvoiceDialog
-              invoice={{ id, invoiceNumber, vendorName, amount, paymentTerms, lockedCardId, firstPaymentMethod }}
+              invoice={{ id, invoiceNumber, vendorName, amount, paymentTerms, lockedCardId, firstPaymentMethod, defaultGlAccount, defaultDepartment, defaultCostCenter }}
               trigger={
                 <Button 
                   size="sm" 
