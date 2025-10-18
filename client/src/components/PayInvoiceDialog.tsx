@@ -84,6 +84,7 @@ interface PayInvoiceDialogProps {
     mcpAutomation?: "available" | "manual" | "unavailable";
     paymentTerms?: "Net 30" | "Net 60" | "Net 90" | "Due on Receipt" | "Monthly Recurring" | "Quarterly Recurring" | "Yearly Recurring" | "2 Installments" | "3 Installments" | "4 Installments";
     lockedCardId?: string | null;
+    firstPaymentMethod?: string | null;
   };
   onPay?: (method: string, details: any) => void;
 }
@@ -127,6 +128,23 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/card-approvals'] });
+    },
+  });
+
+  const unlinkPaymentMethodMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('PATCH', `/api/invoices/${invoice.id}`, {
+        lockedCardId: null,
+        paymentMethod: null,
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      toast({
+        title: "Payment method unlinked",
+        description: "You can now choose a different payment method",
+      });
     },
   });
   
@@ -691,18 +709,47 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                 <AlertCircle className="h-4 w-4 text-amber-500" />
                 <AlertDescription>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Payment Method Locked</p>
+                    <p className="text-sm font-medium">Card Linked to Invoice</p>
                     <p className="text-sm text-muted-foreground">
-                      This invoice is locked to Virtual Card ending in {lockedCard.last4 || "****"}.
-                      {parseFloat(lockedCard.currentSpend) === 0 ? (
+                      Virtual Card ****{lockedCard.last4 || "****"} is linked to this invoice.
+                      {!invoice.firstPaymentMethod ? (
                         <span className="block mt-1">
-                          To use a different payment method, suspend the card from the Cards page.
+                          No successful payment yet - you can unlink this card to choose a different method.
                         </span>
                       ) : (
                         <span className="block mt-1">
-                          All payments for this invoice must use this card (${lockedCard.currentSpend} already spent).
+                          {invoice.firstPaymentMethod === "card" 
+                            ? "All payments must use this card."
+                            : "Payment method is locked."
+                          }
                         </span>
                       )}
+                    </p>
+                    {!invoice.firstPaymentMethod && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => unlinkPaymentMethodMutation.mutate()}
+                        disabled={unlinkPaymentMethodMutation.isPending}
+                        data-testid="button-unlink-payment-method"
+                      >
+                        {unlinkPaymentMethodMutation.isPending ? "Unlinking..." : "Unlink Payment Method"}
+                      </Button>
+                    )}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {/* Show payment method lock alert if firstPaymentMethod is set */}
+            {invoice.firstPaymentMethod && !lockedCard && (
+              <Alert className="border-amber-500/20 bg-amber-500/5">
+                <AlertCircle className="h-4 w-4 text-amber-500" />
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Payment Method Locked</p>
+                    <p className="text-sm text-muted-foreground">
+                      First payment was made via {invoice.firstPaymentMethod.toUpperCase()}. All subsequent payments must use the same method.
                     </p>
                   </div>
                 </AlertDescription>
@@ -711,15 +758,15 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
             
             <Tabs value={paymentMethod} onValueChange={setPaymentMethod} className="w-full">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="card" data-testid="tab-card" disabled={!!lockedCard}>
+                <TabsTrigger value="card" data-testid="tab-card" disabled={invoice.firstPaymentMethod === "ach" || invoice.firstPaymentMethod === "check"}>
                   <CreditCard className="h-4 w-4 mr-2" />
                   Card
                 </TabsTrigger>
-                <TabsTrigger value="ach" data-testid="tab-ach" disabled={!!lockedCard}>
+                <TabsTrigger value="ach" data-testid="tab-ach" disabled={invoice.firstPaymentMethod === "card" || invoice.firstPaymentMethod === "check"}>
                   <Building className="h-4 w-4 mr-2" />
                   ACH
                 </TabsTrigger>
-                <TabsTrigger value="check" data-testid="tab-check" disabled={!!lockedCard}>
+                <TabsTrigger value="check" data-testid="tab-check" disabled={invoice.firstPaymentMethod === "card" || invoice.firstPaymentMethod === "ach"}>
                   <FileCheck className="h-4 w-4 mr-2" />
                   Check
                 </TabsTrigger>
@@ -737,41 +784,56 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                 </AlertDescription>
               </Alert>
 
-              {/* Card Payment Mode Selection */}
-              <div className="space-y-3 p-4 border rounded-lg bg-card">
-                <Label className="text-sm font-medium">How would you like to pay?</Label>
-                <RadioGroup 
-                  value={cardPaymentMode} 
-                  onValueChange={(value: any) => setCardPaymentMode(value)}
-                  className="space-y-3"
-                >
-                  <div className="flex items-start space-x-3 p-3 border rounded-lg hover-elevate cursor-pointer" onClick={() => setCardPaymentMode("pay-via-stampli")}>
-                    <RadioGroupItem value="pay-via-stampli" id="pay-via-stampli" data-testid="radio-pay-via-stampli" />
-                    <div className="flex-1">
-                      <Label htmlFor="pay-via-stampli" className="cursor-pointer flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-primary" />
-                        <span className="font-medium">Pay via Stampli</span>
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Immediate charge - Card will be created and charged instantly
-                      </p>
+              {/* Card Payment Mode Selection - Only show if no card is linked */}
+              {!lockedCard && (
+                <div className="space-y-3 p-4 border rounded-lg bg-card">
+                  <Label className="text-sm font-medium">How would you like to pay?</Label>
+                  <RadioGroup 
+                    value={cardPaymentMode} 
+                    onValueChange={(value: any) => setCardPaymentMode(value)}
+                    className="space-y-3"
+                  >
+                    <div className="flex items-start space-x-3 p-3 border rounded-lg hover-elevate cursor-pointer" onClick={() => setCardPaymentMode("pay-via-stampli")}>
+                      <RadioGroupItem value="pay-via-stampli" id="pay-via-stampli" data-testid="radio-pay-via-stampli" />
+                      <div className="flex-1">
+                        <Label htmlFor="pay-via-stampli" className="cursor-pointer flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-primary" />
+                          <span className="font-medium">Pay via Stampli</span>
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Immediate charge - Card will be created and charged instantly
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-start space-x-3 p-3 border rounded-lg hover-elevate cursor-pointer" onClick={() => setCardPaymentMode("share-card")}>
-                    <RadioGroupItem value="share-card" id="share-card" data-testid="radio-share-card" />
-                    <div className="flex-1">
-                      <Label htmlFor="share-card" className="cursor-pointer flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-primary" />
-                        <span className="font-medium">Share card with vendor</span>
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Create card and share details - No immediate charge
-                      </p>
+                    <div className="flex items-start space-x-3 p-3 border rounded-lg hover-elevate cursor-pointer" onClick={() => setCardPaymentMode("share-card")}>
+                      <RadioGroupItem value="share-card" id="share-card" data-testid="radio-share-card" />
+                      <div className="flex-1">
+                        <Label htmlFor="share-card" className="cursor-pointer flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-primary" />
+                          <span className="font-medium">Share card with vendor</span>
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Create card and share details - No immediate charge
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </RadioGroup>
-              </div>
+                  </RadioGroup>
+                </div>
+              )}
+              
+              {/* Show retry payment info if card is linked */}
+              {lockedCard && (
+                <Alert className="border-primary/20 bg-primary/5">
+                  <Zap className="h-4 w-4" />
+                  <AlertDescription>
+                    <p className="text-sm font-medium">Retry Payment with Linked Card</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      The linked card ****{lockedCard.last4} will be charged. Make sure your wallet has sufficient funds.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="p-3 border rounded-lg bg-accent/20">
                 <div className="flex items-center gap-2 mb-2">
@@ -1031,7 +1093,17 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                 </p>
               </div>
 
-              {cardPaymentMode === "pay-via-stampli" ? (
+              {lockedCard ? (
+                <Button 
+                  onClick={handlePayViaStampli} 
+                  className="w-full" 
+                  disabled={isProcessingPayment}
+                  data-testid="button-retry-payment"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  {isProcessingPayment ? "Processing..." : "Retry Payment"}
+                </Button>
+              ) : cardPaymentMode === "pay-via-stampli" ? (
                 <Button 
                   onClick={handlePayViaStampli} 
                   className="w-full" 
