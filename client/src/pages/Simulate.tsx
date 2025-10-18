@@ -248,6 +248,16 @@ export default function Simulate() {
       return;
     }
 
+    // Validate coding fields (mandatory)
+    if (!glAccount || !department || !costCenter) {
+      toast({
+        title: "Missing coding information",
+        description: "GL Account, Department, and Cost Center are all required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validate payment installments
     const hasEmptyPayments = payments.some(p => !p.amount || !p.dueDate);
     if (hasEmptyPayments) {
@@ -540,7 +550,7 @@ export default function Simulate() {
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="gl-account">GL Account</Label>
+                    <Label htmlFor="gl-account">GL Account *</Label>
                     <Select value={glAccount} onValueChange={setGlAccount}>
                       <SelectTrigger id="gl-account" data-testid="select-gl-account">
                         <SelectValue placeholder={glAccountsLoading ? "Loading..." : "Select account"} />
@@ -562,7 +572,7 @@ export default function Simulate() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
+                    <Label htmlFor="department">Department *</Label>
                     <Select value={department} onValueChange={setDepartment}>
                       <SelectTrigger id="department" data-testid="select-department">
                         <SelectValue placeholder={departmentsLoading ? "Loading..." : "Select department"} />
@@ -584,7 +594,7 @@ export default function Simulate() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cost-center">Cost Center</Label>
+                    <Label htmlFor="cost-center">Cost Center *</Label>
                     <Select value={costCenter} onValueChange={setCostCenter}>
                       <SelectTrigger id="cost-center" data-testid="select-cost-center">
                         <SelectValue placeholder={costCentersLoading ? "Loading..." : "Select center"} />

@@ -474,6 +474,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { vendorName, amount, description, status, approverName, payments } = req.body;
       
+      // Extract coding defaults from first payment (all payments should have the same coding)
+      const defaultGlAccount = payments && payments.length > 0 ? payments[0].glAccount : null;
+      const defaultDepartment = payments && payments.length > 0 ? payments[0].department : null;
+      const defaultCostCenter = payments && payments.length > 0 ? payments[0].costCenter : null;
+      
+      // Validate mandatory fields
+      if (!defaultGlAccount || !defaultDepartment || !defaultCostCenter) {
+        return res.status(400).json({ 
+          error: "GL Account, Department, and Cost Center are required for all invoices" 
+        });
+      }
+      
       // Create the invoice
       const invoice = await storage.createInvoice({
         invoiceNumber: `INV-${Math.floor(Math.random() * 100000)}`,
@@ -485,6 +497,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentMethod: status === "Approved" ? "Pending Payment" : null,
         approvedBy: status === "Approved" ? approverName : null,
         approvedAt: status === "Approved" ? new Date() : null,
+        defaultGlAccount,
+        defaultDepartment,
+        defaultCostCenter,
       });
 
       // Create payment installments if provided

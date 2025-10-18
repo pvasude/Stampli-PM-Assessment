@@ -1026,44 +1026,38 @@ export function PayInvoiceDialog({ trigger, invoice, onPay }: PayInvoiceDialogPr
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="gl-account-template">GL Account Template</Label>
-                    <Input
-                      id="gl-account-template"
-                      value={glAccountTemplate || ''}
-                      onChange={(e) => setGlAccountTemplate(e.target.value || null)}
-                      placeholder="e.g., 6200"
-                      data-testid="input-gl-account-template"
-                    />
+                    <Label>GL Account Template</Label>
+                    <div className="p-3 bg-muted/50 rounded-md border">
+                      <p className="text-sm font-medium" data-testid="text-gl-account-template">
+                        {glAccountTemplate || 'Not set'}
+                      </p>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Pre-filled from invoice defaults - transactions inherit this value
+                      From invoice defaults - transactions inherit this value (not editable)
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="department-template">Department Template</Label>
-                    <Input
-                      id="department-template"
-                      value={departmentTemplate || ''}
-                      onChange={(e) => setDepartmentTemplate(e.target.value || null)}
-                      placeholder="e.g., Engineering"
-                      data-testid="input-department-template"
-                    />
+                    <Label>Department Template</Label>
+                    <div className="p-3 bg-muted/50 rounded-md border">
+                      <p className="text-sm font-medium" data-testid="text-department-template">
+                        {departmentTemplate || 'Not set'}
+                      </p>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Pre-filled from invoice defaults - transactions inherit this value
+                      From invoice defaults - transactions inherit this value (not editable)
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cost-center-template">Cost Center Template</Label>
-                    <Input
-                      id="cost-center-template"
-                      value={costCenterTemplate || ''}
-                      onChange={(e) => setCostCenterTemplate(e.target.value || null)}
-                      placeholder="e.g., CC-100"
-                      data-testid="input-cost-center-template"
-                    />
+                    <Label>Cost Center Template</Label>
+                    <div className="p-3 bg-muted/50 rounded-md border">
+                      <p className="text-sm font-medium" data-testid="text-cost-center-template">
+                        {costCenterTemplate || 'Not set'}
+                      </p>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Pre-filled from invoice defaults - transactions inherit this value
+                      From invoice defaults - transactions inherit this value (not editable)
                     </p>
                   </div>
 
